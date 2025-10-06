@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iperf3
+  namespace: bijouxlabs
+  labels:
+    app: iperf3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iperf3
+  template:
+    metadata:
+      labels:
+        app: iperf3
+    spec:
+      containers:
+        - name: iperf3
+          # Any of these are fine; pick one you prefer
+          # image: networkstatic/iperf3:latest
+          image: docker.io/networkstatic/iperf3:latest 
+          args: ["-s"]            # run as server
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: tcp-iperf
+              containerPort: 5201
+              protocol: TCP
+            - name: udp-iperf
+              containerPort: 5201
+              protocol: UDP
+          readinessProbe:
+            tcpSocket:
+              port: 5201
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 1
+              memory: 256Mi
+---
