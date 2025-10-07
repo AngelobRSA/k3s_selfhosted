@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tauc-speedtest
+  namespace: bijouxlabs
+  annotations:
+    metallb.universe.tf/address-pool: lan-pool
+spec:
+  type: LoadBalancer
+  loadBalancerIP: <LB_IP_SPEEDTEST>    # pick a free IP from your MetalLB pool
+  selector:
+    app: tauc-speedtest
+  ports:
+    - name: http-8089
+      port: 8089
+      targetPort: 80
+      protocol: TCP

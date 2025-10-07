@@ -3,8 +3,6 @@ kind: Deployment
 metadata:
   name: iperf3
   namespace: bijouxlabs
-  labels:
-    app: iperf3
 spec:
   replicas: 1
   selector:
@@ -14,12 +12,11 @@ spec:
     metadata:
       labels:
         app: iperf3
+        app.kubernetes.io/part-of: iperf3
     spec:
       containers:
         - name: iperf3
-          # Any of these are fine; pick one you prefer
-          # image: networkstatic/iperf3:latest
-          image: docker.io/networkstatic/iperf3:latest 
+          image: docker.io/networkstatic/iperf3:latest
           args: ["-s"]            # run as server
           imagePullPolicy: IfNotPresent
           ports:

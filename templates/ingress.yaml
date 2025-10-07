@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: opengist
+  namespace: bijouxlabs
+  annotations:
+    cert-manager.io/cluster-issuer: ""  # (not using cert-manager)
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts: [ "gist.bijouxlabs.cc" ]
+      secretName: tls-gist-bijouxlabs-cc  # Traefik will create/rotate it
+  rules:
+    - host: gist.bijouxlabs.cc
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: opengist
+                port:
+                  number: 6157

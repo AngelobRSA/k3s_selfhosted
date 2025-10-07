@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tauc-nginx-conf
+  namespace: bijouxlabs
+data:
+  default.conf: |
+    server {
+      listen 80 default_server;
+      server_name _;
+
+      # adjust if you want larger uploads
+      client_max_body_size 200m;
+
+      # serve files from /downloads
+      location /downloads/ {
+        alias /var/www/downloads/;
+        autoindex on;
+      }
+
+      # accept PUT uploads to /upload/<filename>
+      # requires http_dav_module (present in official nginx)
+      location /upload/ {
+        alias /var/www/uploads/;
+        dav_methods PUT;
+        create_full_put_path on;
+        dav_access user:rw group:rw all:r;
+      }
+    }

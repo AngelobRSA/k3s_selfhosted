@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opengist
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opengist
+  template:
+    metadata:
+      labels:
+        app: opengist
+    spec:
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: opengist
+          image: ghcr.io/thomiceli/opengist:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 6157
+              name: http
+          env:
+            - name: OG_HTTP_PORT
+              value: "6157"
+            - name: OG_BASE_URL
+              value: "https://opengist.bijouxlabs.cc"
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: data
+              mountPath: /opengist
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: "1"
+              memory: 256Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: opengist-data
