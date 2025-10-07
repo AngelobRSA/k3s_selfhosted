@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netdata
+  namespace: bijouxlabs
+  labels: { app: netdata }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: netdata }
+  template:
+    metadata:
+      labels: { app: netdata }
+    spec:
+      containers:
+      - name: netdata
+        image: netdata/netdata:stable
+        ports:
+        - containerPort: 19999
+          name: http
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/netdata
+        - name: stream-config
+          mountPath: /etc/netdata/stream.conf
+          subPath: stream.conf
+        securityContext:
+          runAsUser: 0       # netdata needs some privs for collectors
+          runAsGroup: 0
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 1
+            memory: 1Gi
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: netdata-data
+      - name: stream-config
+        configMap:
+          name: netdata-stream

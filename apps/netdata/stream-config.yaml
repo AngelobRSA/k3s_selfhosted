@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netdata-stream
+  namespace: bijouxlabs
+data:
+  stream.conf: |
+    [stream]
+      enabled = yes
+      # parent listens on 19999 inside the pod (already your Service port)
+      default port = 19999
+      allow from = *
+
+    # define one section per child API key you want to accept
+    [API_KEY: b5e18454-819c-4882-9cdf-e996ea526d73]
+      enabled = yes
+      default memory mode = dbengine
+      health enabled by default = auto
