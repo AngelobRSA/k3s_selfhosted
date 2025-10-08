@@ -1,13 +1,14 @@
-# apps/netdata/ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: netdata
   namespace: bijouxlabs
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    # if you wired the Cloudflare DNS-01 certResolver as "cloudflare"
+    # traefik.ingress.kubernetes.io/router.tls: "true"
+    # traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
 spec:
   ingressClassName: traefik
   rules:
@@ -21,6 +22,7 @@ spec:
             name: netdata
             port:
               number: 19999
-  tls:
-  - hosts:
-    - netdata.bijouxlabs.cc
+  # tls:
+  # - hosts:
+  #   - netdata.bijouxlabs.cc
+

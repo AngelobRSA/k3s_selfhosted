@@ -5,10 +5,11 @@ metadata:
   namespace: bijouxlabs
   labels: { app: netdata }
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app: netdata
   ports:
     - name: http
       port: 19999
-      targetPort: http
+      targetPort: 19999
+      protocol: TCP
