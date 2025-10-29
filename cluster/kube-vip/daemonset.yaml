@@ -1,7 +1,3 @@
-#This daemonset.yaml deploys kube-vip as a DaemonSet in the kube-system namespace.
-#A DaemonSet ensures that a copy of a pod runs on all (or some) nodes in the cluster.
-#In this case, kube-vip is configured to run only on control-plane nodes to provide high availability.
-
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -14,39 +10,55 @@ spec:
     metadata:
       labels: { app: kube-vip }
     spec:
+      priorityClassName: system-node-critical
+      terminationGracePeriodSeconds: 0
       hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       serviceAccountName: kube-vip
       nodeSelector:
         node-role.kubernetes.io/control-plane: "true"
       tolerations:
-        - key: node-role.kubernetes.io/control-plane
-          operator: Exists
-          effect: NoSchedule
-        - key: node-role.kubernetes.io/master
-          operator: Exists
-          effect: NoSchedule
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "node-role.kubernetes.io/master"
+          operator: "Exists"
+          effect: "NoSchedule"
+
+      # ensure the pod can resolve your masters by name (belt + braces)
+      hostAliases:
+        - ip: "192.168.0.154"
+          hostnames: ["kmaster01"]
+        - ip: "192.168.0.156"
+          hostnames: ["kmaster02"]
+        - ip: "192.168.0.31"
+          hostnames: ["kmaster03"]
+
       containers:
         - name: kube-vip
+          resources:
+            requests:
+              cpu: 50m
+              memory: 100Mi
+            limits:
+              cpu: 100m
+              memory: 200Mi
           image: ghcr.io/kube-vip/kube-vip:v0.8.0
-          args: ["manager"]
+          # run in control-plane ARP mode, all params as flags (no DNS/CM lookups)
+          args:
+            - manager
+            - --arp
+            - --controlplane
+            - --leaderElection
+            - --interface=ens18
+            - --vip=192.168.0.220
+            - --cidr=32
           env:
-            - name: vip
-              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: vip } }
-            - name: vip_interface
-              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: vip_interface } }
-            - name: address
-              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: address } }
-            - name: port
-              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: port } }
-            - name: cp_enable
-              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: cp_enable } }
-            - name: lb_enable
-              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: lb_enable } }
-            - name: vip_arp
-              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: vip_arp } }
-            - name: leaderElection
-              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: leaderElection } }
+            # hard-pin the in-cluster API address so no 'kubernetes' DNS is needed
+            - name: KUBERNETES_SERVICE_HOST
+              value: "10.43.0.1"
+            - name: KUBERNETES_SERVICE_PORT
+              value: "443"
           securityContext:
             capabilities:
               add: ["NET_ADMIN","NET_RAW"]
-
