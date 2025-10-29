@@ -4,4 +4,4 @@ resources:
   - metallb
   - cilium
   - traefik
-  - storage
+  - longhorn
