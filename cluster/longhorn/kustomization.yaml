@@ -1,0 +1,4 @@
+resources:
+    - https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml
+
+    - storageclass-default.yaml
