@@ -1,0 +1,7 @@
+# The kustomization.yaml file tells kustomize how to build the kube-vip manifests
+namespace: kube-system
+
+resources:
+  - rbac.yaml
+  - configmap.yaml
+  - daemonset.yaml

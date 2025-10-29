@@ -1,0 +1,54 @@
+#This daemonset.yaml deploys kube-vip as a DaemonSet in the kube-system namespace.
+#A DaemonSet ensures that a copy of a pod runs on all (or some) nodes in the cluster.
+#In this case, kube-vip is configured to run only on control-plane nodes to provide high availability.
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-vip
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: kube-vip
+  template:
+    metadata:
+      labels:
+        app: kube-vip
+    spec:
+      hostNetwork: true
+      serviceAccountName: kube-vip
+      # run only on control-plane servers
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+      tolerations:
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "node-role.kubernetes.io/master"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: kube-vip
+          image: ghcr.io/kube-vip/kube-vip:v0.8.0
+          args: ["manager"]
+          env:
+            - name: vip
+              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: vip } }
+            - name: vip_interface
+              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: vip_interface } }
+            - name: address
+              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: address } }
+            - name: port
+              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: port } }
+            - name: cp_enable
+              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: cp_enable } }
+            - name: lb_enable
+              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: lb_enable } }
+            - name: vip_arp
+              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: vip_arp } }
+            - name: leaderElection
+              valueFrom: { configMapKeyRef: { name: kube-vip-config, key: leaderElection } }
+          securityContext:
+            capabilities:
+              add: ["NET_ADMIN","NET_RAW"]

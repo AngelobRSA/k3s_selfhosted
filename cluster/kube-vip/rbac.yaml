@@ -1,0 +1,35 @@
+# this rbac.yaml is used by kube-vip for leader election and service management.
+# It creates a ServiceAccount, ClusterRole, and ClusterRoleBinding.
+# ServiceAccount: kube-vip in namespace kube-system
+# ClusterRole: kube-vip-role with permissions to manage services, endpoints, nodes, and leases.
+# ClusterRoleBinding: binds the kube-vip-role to the kube-vip ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-vip
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-vip-role
+rules:
+- apiGroups: [""]
+  resources: ["services","endpoints","nodes"]
+  verbs: ["get","list","watch","update","patch"]
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get","list","watch","create","update","patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-vip-role
+subjects:
+- kind: ServiceAccount
+  name: kube-vip
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: kube-vip-role
+  apiGroup: rbac.authorization.k8s.io
