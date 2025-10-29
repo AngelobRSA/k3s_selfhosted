@@ -1,7 +1,24 @@
-# The kustomization.yaml file tells kustomize how to build the kube-vip manifests
 namespace: kube-system
 
 resources:
   - rbac.yaml
-  - configmap.yaml
   - daemonset.yaml
+
+images:
+  - name: ghcr.io/kube-vip/kube-vip
+    newTag: v0.8.0
+
+configMapGenerator:
+  - name: kube-vip-config
+    literals:
+      - vip=192.168.0.220
+      - vip_interface=ens18
+      - address=0.0.0.0
+      - port=6443
+      - cp_enable=true
+      - lb_enable=false
+      - vip_arp=true
+      - leaderElection=true
+
+generatorOptions:
+  disableNameSuffixHash: true
