@@ -1,0 +1,7 @@
+# This is the cluster entrypoint
+resources:
+  - kube-vip
+  - metallb
+  - cilium
+  - traefik
+  - storage
