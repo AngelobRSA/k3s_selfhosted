@@ -29,7 +29,7 @@ spec:
       hostAliases:
         - ip: "192.168.0.154"
           hostnames: ["kmaster01"]
-        - ip: "192.168.0.156"
+        - ip: "192.168.0.11"
           hostnames: ["kmaster02"]
         - ip: "192.168.0.31"
           hostnames: ["kmaster03"]
