@@ -7,6 +7,6 @@ spec:
   type: ClusterIP
   ports:
     - name: http
-      port: 8123      # service port inside k8s
-      targetPort: 8123
+      port: $(PORT_HOMEASSISTANT)
+      targetPort: $(PORT_HOMEASSISTANT)
   # NO selector (important)

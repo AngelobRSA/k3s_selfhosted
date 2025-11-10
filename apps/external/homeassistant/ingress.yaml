@@ -6,13 +6,12 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
-    # If Home Assistant is HTTPS on 8123, uncomment:
-    traefik.ingress.kubernetes.io/service.serversscheme: https
+    traefik.ingress.kubernetes.io/router.tls.certresolver: $(TLS_CERT_RESOLVER)
+    traefik.ingress.kubernetes.io/router.middlewares: bijouxlabs-allow-ha-lan@kubernetescrd
 spec:
-  ingressClassName: traefik
+  ingressClassName: $(TLS_INGRESS_CLASS)
   rules:
-  - host: ha.bijouxlabs.cc
+  - host: $(DOMAIN_HOMEASSISTANT)
     http:
       paths:
       - path: /
@@ -21,6 +20,6 @@ spec:
           service:
             name: homeassistant
             port:
-              number: 8123
+              number: $(PORT_HOMEASSISTANT)
   tls:
-  - hosts: [ha.bijouxlabs.cc]
+  - hosts: [$(DOMAIN_HOMEASSISTANT)]

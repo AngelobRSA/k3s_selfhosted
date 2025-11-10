@@ -4,10 +4,10 @@ metadata:
   name: homeassistant-slice
   namespace: bijouxlabs
   labels:
-    kubernetes.io/service-name: homeassistant   # <- ties it to the Service
+    kubernetes.io/service-name: homeassistant
 addressType: IPv4
 endpoints:
-  - addresses: ["192.168.0.134"]                 # <- your HA host
+  - addresses: ["192.168.0.134"]
 ports:
   - name: http
     port: 8123
