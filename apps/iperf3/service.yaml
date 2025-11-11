@@ -12,10 +12,10 @@ spec:
     app: iperf3
   ports:
     - name: tcp-iperf
-      port: $(PORT_IPERF3)
+      port: 5201
       protocol: TCP
-      targetPort: $(PORT_IPERF3)
+      targetPort: 5201
     - name: udp-iperf
-      port: $(PORT_IPERF3)
+      port: 5201
       protocol: UDP
-      targetPort: $(PORT_IPERF3)
+      targetPort: 5201

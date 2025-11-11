@@ -20,6 +20,6 @@ spec:
           service:
             name: opengist
             port:
-              number: $(PORT_OPENGIST)
+              number: 6157
   tls:
   - hosts: [$(DOMAIN_OPENGIST)]
