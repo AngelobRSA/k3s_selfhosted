@@ -20,7 +20,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m0s
-  path: ./home/angelo/Repos/git/bijouxlabs
+  path: ./cluster/
   prune: true
   sourceRef:
     kind: GitRepository
