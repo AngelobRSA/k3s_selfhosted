@@ -2,7 +2,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: tauc-uploads
-  namespace: bijouxlabs
+  namespace: $(NAMESPACES_APPLICATIONS)
 spec:
   accessModes: ["ReadWriteOnce"]
   storageClassName: local-path   # k3s default dynamic storage

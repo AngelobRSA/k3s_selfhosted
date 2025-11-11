@@ -1,0 +1,10 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: allow-ha-lan
+  namespace: $(NAMESPACES_APPLICATIONS)
+spec:
+  ipWhiteList:
+    sourceRange:
+      - $(METALLB_SUBNET_CIDR)
+      - $(NETWORK_ALLOW_ALTERNATE)

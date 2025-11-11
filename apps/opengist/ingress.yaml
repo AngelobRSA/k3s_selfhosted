@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: homeassistant
+  name: opengist
   namespace: $(NAMESPACES_APPLICATIONS)
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
@@ -11,15 +11,15 @@ metadata:
 spec:
   ingressClassName: $(TLS_INGRESS_CLASS)
   rules:
-  - host: $(DOMAIN_HOMEASSISTANT)
+  - host: $(DOMAIN_OPENGIST)
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: homeassistant
+            name: opengist
             port:
-              number: $(PORTS_HOMEASSISTANT)
+              number: $(PORT_OPENGIST)
   tls:
-  - hosts: [$(DOMAIN_HOMEASSISTANT)]
+  - hosts: [$(DOMAIN_OPENGIST)]

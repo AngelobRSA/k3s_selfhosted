@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: iperf3
-  namespace: bijouxlabs
+  namespace: $(NAMESPACES_APPLICATIONS)
 spec:
   replicas: 1
   selector:
@@ -17,7 +17,7 @@ spec:
       containers:
         - name: iperf3
           image: docker.io/networkstatic/iperf3:latest
-          args: ["-s"]            # run as server
+          args: ["-s"]
           imagePullPolicy: IfNotPresent
           ports:
             - name: tcp-iperf

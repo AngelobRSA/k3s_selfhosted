@@ -3,8 +3,7 @@ kind: Service
 metadata:
   name: opengist
   annotations:
-    # Optional: pin a MetalLB address you reserved
-    metallb.universe.tf/loadBalancerIPs: "192.168.0.162"
+    metallb.universe.tf/loadBalancerIPs: "$(LB_IP_OPENGIST)"
 spec:
   type: LoadBalancer
   selector:

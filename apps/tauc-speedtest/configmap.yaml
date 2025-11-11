@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: tauc-nginx-conf
-  namespace: bijouxlabs
+  namespace: $(NAMESPACES_APPLICATIONS)
 data:
   default.conf: |
     server {

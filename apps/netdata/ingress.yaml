@@ -10,9 +10,9 @@ metadata:
     # traefik.ingress.kubernetes.io/router.tls: "true"
     # traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
 spec:
-  ingressClassName: traefik
+  ingressClassName: $(TLS_INGRESS_CLASS)
   rules:
-  - host: netdata.bijouxlabs.cc
+  - host: $(DOMAIN_NETDATA)
     http:
       paths:
       - path: /
@@ -21,7 +21,7 @@ spec:
           service:
             name: netdata
             port:
-              number: 19999
+              number: $(PORT_NETDATA)
   # tls:
   # - hosts:
   #   - netdata.bijouxlabs.cc

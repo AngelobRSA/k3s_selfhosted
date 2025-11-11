@@ -26,7 +26,7 @@ spec:
             - name: OG_HTTP_PORT
               value: "6157"
             - name: OG_BASE_URL
-              value: "https://opengist.bijouxlabs.cc"
+              value: $(DOMAIN_OPENGIST)
           securityContext:
             allowPrivilegeEscalation: false
           volumeMounts:

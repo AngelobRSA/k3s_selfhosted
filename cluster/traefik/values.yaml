@@ -3,10 +3,11 @@ service:
   enabled: true
   type: LoadBalancer
   annotations:
-    metallb.universe.tf/loadBalancerIPs: "192.168.0.169"   # your chosen LB IP
+    metallb.universe.tf/loadBalancerIPs: "$(LB_IP_TRAEFIK)"
+  externalTrafficPolicy: Local
   ports:
-    web: 80
-    websecure: 443
+    web: $(TRAEFIK_PORT_HTTP)
+    websecure: $(TRAEFIK_PORT_HTTPS)
 
 # === Core providers ===
 providers:
@@ -15,7 +16,7 @@ providers:
   kubernetesIngress:
     enabled: true
     publishedService:
-      enabled: true      # lets Traefik discover its external IP for HTTPS redirects, etc.
+      enabled: true      
 
 # === Persistence for ACME certs ===
 persistence:
@@ -25,22 +26,23 @@ persistence:
   accessMode: ReadWriteOnce
 
 # === Cert resolver (DNS-01 with Cloudflare) ===
-# We pass ACME settings via CLI and the token via envFrom (secret).
 deployment:
   additionalArguments:
     - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
     - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-    - "--certificatesresolvers.cloudflare.acme.email=you@bijouxlabs.cc"
+    - "--certificatesresolvers.cloudflare.acme.email=${ACME_EMAIL}"  
     - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
     - "--certificatesresolvers.cloudflare.acme.storage=/data/acme.json"
-    # Optional but handy if your CF zone is proxied elsewhere:
-    # - "--certificatesresolvers.cloudflare.acme.dnschallenge.disablePropagationCheck=true"
   envFrom:
-    - secretRef:
-        name: cloudflare-api-token
+    - secretRef: { name: traefik-acme }
 
-# Optional: name your ingressClass
 ingressClass:
   enabled: true
-  isDefaultClass: true         # makes Traefik the default Ingress controller
+  isDefaultClass: true         
   name: traefik
+
+pilot:
+  enabled: false
+ports:
+  traefik:
+    expose: false

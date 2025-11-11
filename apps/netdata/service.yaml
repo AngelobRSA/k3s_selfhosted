@@ -10,6 +10,6 @@ spec:
     app: netdata
   ports:
     - name: http
-      port: 19999
-      targetPort: 19999
+      port: $(PORT_NETDATA)
+      targetPort: $(PORT_NETDATA)
       protocol: TCP

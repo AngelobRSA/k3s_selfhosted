@@ -2,7 +2,7 @@ apiVersion: discovery.k8s.io/v1
 kind: EndpointSlice
 metadata:
   name: homeassistant-slice
-  namespace: bijouxlabs
+  namespace: $(NAMESPACES_APPLICATIONS)
   labels:
     kubernetes.io/service-name: homeassistant
 addressType: IPv4
