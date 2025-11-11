@@ -1,4 +1,4 @@
-# BijouxLabs Flux CD - Public Environment Variables (Defaults/Placeholders)
+# Flux CD - Public Environment Variables (Defaults/Placeholders)
 # This file contains default placeholder values for public deployment
 # Replace with actual values in private overlay or environment-specific overlays
 
