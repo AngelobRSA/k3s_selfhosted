@@ -1,0 +1,13 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: homeassistant-claim
+  namespace: $(NAMESPACES_APPLICATIONS)
+spec:
+  accessModes:
+    - ReadWriteMany # The volume can be mounted as read-write by many nodes
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi

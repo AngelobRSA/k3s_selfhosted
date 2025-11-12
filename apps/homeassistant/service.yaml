@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: homeassistant
+  namespace: $(NAMESPACES_APPLICATIONS)
+spec:
+  type: LoadBalancer
+  LoadBalancerIP: $(LB_IP_HOMEASSISTANT)
+  selector:
+    app: home-assistant
+  ports:
+    - name: http
+      port: 8123
+      targetPort: 8123
