@@ -4,18 +4,4 @@ namespace: traefik
 
 resources:
   - namespace.yaml
-  - values.yaml
-
-
-helmCharts:
-  - name: traefik
-    repo: https://traefik.github.io/charts
-    version: 37.1.2
-    releaseName: traefik
-    namespace: traefik
-    valuesFile: values.yaml
-
-
-
-
-    
+  - helmrelease.yaml
