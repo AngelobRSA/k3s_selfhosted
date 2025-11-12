@@ -7,7 +7,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
     traefik.ingress.kubernetes.io/router.tls.certresolver: $(TLS_CERT_RESOLVER)
-    traefik.ingress.kubernetes.io/router.middlewares: bijouxlabs-allow-ha-lan@kubernetescrd
+#    traefik.ingress.kubernetes.io/router.middlewares: bijouxlabs-allow-ha-lan@kubernetescrd
 spec:
   ingressClassName: $(TLS_INGRESS_CLASS)
   rules:
@@ -20,6 +20,6 @@ spec:
           service:
             name: homeassistant
             port:
-              number: $(PORTS_HOMEASSISTANT)
+              number: 8123
   tls:
   - hosts: [$(DOMAIN_HOMEASSISTANT)]
