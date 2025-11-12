@@ -27,11 +27,11 @@ spec:
 
       # ensure the pod can resolve your masters by name (belt + braces)
       hostAliases:
-        - ip: "$(KUBEVIP_MASTER01_IP)"
+        - ip: "$(KUBEVIP_MASTER_01_IP)"
           hostnames: ["kmaster01"]
-        - ip: "$(KUBEVIP_MASTER02_IP)"
+        - ip: "$(KUBEVIP_MASTER_02_IP)"
           hostnames: ["kmaster02"]
-        - ip: "$(KUBEVIP_MASTER03_IP)"
+        - ip: "$(KUBEVIP_MASTER_03_IP)"
           hostnames: ["kmaster03"]
 
       containers:
@@ -52,7 +52,7 @@ spec:
             - --leaderElection
             - --interface=$(KUBEVIP_INTERFACE)
             - --vip=$(KUBEVIP_VIRTUAL_IP)
-            - --cidr=$(KUBEVIP_VIRTUAL_IPCDIR)
+            - --cidr=$(KUBEVIP_VIRTUAL_IP_CIDR)
           env:
             # hard-pin the in-cluster API address so no 'kubernetes' DNS is needed
             - name: KUBERNETES_SERVICE_HOST

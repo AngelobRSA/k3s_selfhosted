@@ -1,7 +1,382 @@
-# This is the cluster entrypoint
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# BijouxLabs Cluster Configuration with Kustomize Replacements + SOPS
+#
+# This is the cluster entrypoint. All environment-specific values are stored in
+# cluster/replacements.sops.yaml and applied cluster-wide via replacements.
+
 resources:
   - kube-vip
   - metallb
   - cilium
   - traefik
   - longhorn
+  - replacements.sops.yaml
+
+# Centralized Replacements mapping ConfigMap values to manifest fields
+replacements:
+  # Network Configuration
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.METALLB_IP_POOL_START
+    targets:
+      - select:
+          kind: IPAddressPool
+          name: ippool
+        fieldPaths:
+          - spec.addresses.0
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.METALLB_IP_POOL_END
+    targets:
+      - select:
+          kind: IPAddressPool
+          name: ippool
+        fieldPaths:
+          - spec.addresses.0
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.LB_IP_TRAEFIK
+    targets:
+      - select:
+          kind: Service
+          name: traefik
+        fieldPaths:
+          - metadata.annotations.metallb\.universe\.tf/loadBalancerIPs
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.KUBEVIP_VIRTUAL_IP
+    targets:
+      - select:
+          kind: DaemonSet
+          name: kube-vip
+        fieldPaths:
+          - spec.template.spec.containers.0.env.[name=vip].value
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.KUBEVIP_INTERFACE
+    targets:
+      - select:
+          kind: DaemonSet
+          name: kube-vip
+        fieldPaths:
+          - spec.template.spec.containers.0.env.[name=interface].value
+  # Load Balancer IPs
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.LB_IP_OPENGIST
+    targets:
+      - select:
+          kind: Service
+          name: opengist
+        fieldPaths:
+          - metadata.annotations.metallb\.universe\.tf/loadBalancerIPs
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.LB_IP_TRAEFIK
+    targets:
+      - select:
+          kind: Service
+          name: traefik
+        fieldPaths:
+          - metadata.annotations.metallb\.universe\.tf/loadBalancerIPs
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.LB_IP_LONGHORN
+    targets:
+      - select:
+          kind: Service
+          name: longhorn-frontend-lb
+        fieldPaths:
+          - metadata.annotations.metallb\.universe\.tf/loadBalancerIPs
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.LB_IP_TAUC_SPEEDTEST
+    targets:
+      - select:
+          kind: Service
+          name: tauc-speedtest
+        fieldPaths:
+          - metadata.annotations.metallb\.universe\.tf/address-pool
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.LB_IP_HOMEASSISTANT
+    targets:
+      - select:
+          kind: Service
+          name: homeassistant
+        fieldPaths:
+          - metadata.annotations.metallb\.universe\.tf/loadBalancerIPs
+  # Domain Configuration
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.DOMAIN_OPENGIST
+    targets:
+      - select:
+          kind: Ingress
+          name: opengist
+        fieldPaths:
+          - spec.rules.0.host
+          - spec.tls.0.hosts.0
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.DOMAIN_HOMEASSISTANT
+    targets:
+      - select:
+          kind: Ingress
+          name: homeassistant
+        fieldPaths:
+          - spec.rules.0.host
+          - spec.tls.0.hosts.0
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.TLS_CERT_RESOLVER
+    targets:
+      - select:
+          kind: Ingress
+        fieldPaths:
+          - spec.annotations.cert\.manager\.io/cluster-issuer
+          - spec.annotations.traefik\.io/router\.tls\.certresolver
+
+  # Namespace Configuration
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.NAMESPACES_APPLICATIONS
+    targets:
+      - select:
+          kind: Service
+          name: opengist
+        fieldPaths:
+          - metadata.namespace
+      - select:
+          kind: Service
+          name: tauc-speedtest
+        fieldPaths:
+          - metadata.namespace
+      - select:
+          kind: Service
+          name: homeassistant
+        fieldPaths:
+          - metadata.namespace
+      - select:
+          kind: Service
+          name: iperf3
+        fieldPaths:
+          - metadata.namespace
+      - select:
+          kind: Deployment
+        fieldPaths:
+          - metadata.namespace
+      - select:
+          kind: Ingress
+        fieldPaths:
+          - metadata.namespace
+      - select:
+          kind: PersistentVolumeClaim
+        fieldPaths:
+          - metadata.namespace
+      - select:
+          kind: ConfigMap
+          name: tauc-speedtest
+        fieldPaths:
+          - metadata.namespace
+      - select:
+          kind: Endpoints
+        fieldPaths:
+          - metadata.namespace
+
+  # Port Configuration
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.PORT_TAUCSPEEDTEST
+    targets:
+      - select:
+          kind: Service
+          name: tauc-speedtest
+        fieldPaths:
+          - spec.ports.0.targetPort
+
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.PORTS_HOMEASSISTANT
+    targets:
+      - select:
+          kind: Ingress
+          name: homeassistant
+        fieldPaths:
+          - spec.rules.0.http.paths.0.backend.service.port.number
+      - select:
+          kind: Ingress
+          name: homeassistant-external
+        fieldPaths:
+          - spec.rules.0.http.paths.0.backend.service.port.number
+
+  # TLS Ingress Class Configuration
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.TLS_INGRESS_CLASS
+    targets:
+      - select:
+          kind: Ingress
+        fieldPaths:
+          - spec.ingressClassName
+
+  # Additional Load Balancer IP Configuration
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.LB_IP_TAUC_SPEEDTEST
+    targets:
+      - select:
+          kind: Service
+          name: tauc-speedtest
+        fieldPaths:
+          - spec.loadBalancerIP
+
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.LB_IP_HOMEASSISTANT
+    targets:
+      - select:
+          kind: Service
+          name: homeassistant
+        fieldPaths:
+          - spec.loadBalancerIP
+
+  # Image Tags - Kube-VIP
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.IMAGE_KUBEVIP_TAG
+    targets:
+      - select:
+          kind: DaemonSet
+          name: kube-vip
+        fieldPaths:
+          - spec.template.spec.containers.0.image
+
+  # Kube-VIP Configuration
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.KUBEVIP_INTERFACE
+    targets:
+      - select:
+          kind: DaemonSet
+          name: kube-vip
+        fieldPaths:
+          - spec.template.spec.containers.0.args.[0]
+
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.KUBEVIP_VIRTUAL_IP
+    targets:
+      - select:
+          kind: DaemonSet
+          name: kube-vip
+        fieldPaths:
+          - spec.template.spec.containers.0.args.[1]
+
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.KUBEVIP_VIRTUAL_IP_CIDR
+    targets:
+      - select:
+          kind: DaemonSet
+          name: kube-vip
+        fieldPaths:
+          - spec.template.spec.containers.0.args.[2]
+
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.KUBEVIP_KUBERNETES_SERVICE_IP
+    targets:
+      - select:
+          kind: DaemonSet
+          name: kube-vip
+        fieldPaths:
+          - spec.template.spec.containers.0.env.[name=kubernetes_service_host].value
+
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.KUBEVIP_KUBERNETES_SERVICE_PORT
+    targets:
+      - select:
+          kind: DaemonSet
+          name: kube-vip
+        fieldPaths:
+          - spec.template.spec.containers.0.env.[name=kubernetes_service_port].value
+
+  # MetalLB IP Pool Configuration
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.METALLB_IP_POOL_START
+    targets:
+      - select:
+          kind: IPAddressPool
+        fieldPaths:
+          - spec.addresses.0
+
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.METALLB_IP_POOL_END
+    targets:
+      - select:
+          kind: IPAddressPool
+        fieldPaths:
+          - spec.addresses.0
+
+  # Domain Configuration - OpenGist
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.DOMAIN_OPENGIST
+    targets:
+      - select:
+          kind: Ingress
+          name: opengist
+        fieldPaths:
+          - spec.rules.0.host
+          - spec.tls.0.hosts.0
+      - select:
+          kind: Deployment
+          name: opengist
+        fieldPaths:
+          - spec.template.spec.containers.0.env.[name=domain].value
+
+  # Longhorn Load Balancer IP
+  - source:
+      kind: ConfigMap
+      name: bijouxlabs-replacements
+      fieldPath: data.LB_IP_LONGHORN
+    targets:
+      - select:
+          kind: Service
+          name: longhorn-frontend-lb
+        fieldPaths:
+          - spec.loadBalancerIP
