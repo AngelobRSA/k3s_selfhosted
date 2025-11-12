@@ -7,7 +7,7 @@ metadata:
     metallb.universe.tf/address-pool: lan-pool
 spec:
   type: LoadBalancer
-  loadBalancerIP: $(LB_IP_TAUCSPEEDTEST)     # pick a free IP from your MetalLB pool
+  loadBalancerIP: $(LB_IP_TAUCSPEEDTEST)
   selector:
     app: tauc-speedtest
   ports:

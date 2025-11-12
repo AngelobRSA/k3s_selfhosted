@@ -3,11 +3,11 @@ service:
   enabled: true
   type: LoadBalancer
   annotations:
-    metallb.universe.tf/loadBalancerIPs: "$(LB_IP_TRAEFIK)"
+    metallb.universe.tf/loadBalancerIPs: "192.168.0.169"
   externalTrafficPolicy: Local
   ports:
-    web: $(TRAEFIK_PORT_HTTP)
-    websecure: $(TRAEFIK_PORT_HTTPS)
+    web: 80
+    websecure: 443
 
 # === Core providers ===
 providers:

@@ -1,0 +1,9 @@
+creation_rules:
+  # Kustomize replacements - encrypted ConfigMaps with environment-specific values
+  - path_regex: cluster/.*replacements.*\.ya?ml$
+    age: ["age1k8za0kdd9332n5uu9mfq2gqamre6fazx0qa5f4xxmd2e5wx3tq7q2d7nt6"]
+    encrypted_regex: '^data$'
+  # Traefik secrets - encrypted data fields only
+  - path_regex: cluster/traefik/secrets/.*\.ya?ml$
+    age: ["age1k8za0kdd9332n5uu9mfq2gqamre6fazx0qa5f4xxmd2e5wx3tq7q2d7nt6"]
+    encrypted_regex: '^(data|stringData)$'
