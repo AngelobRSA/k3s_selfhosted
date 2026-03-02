@@ -220,29 +220,6 @@ replacements:
         fieldPaths:
           - spec.ingressClassName
 
-  # Additional Load Balancer IP Configuration
-  - source:
-      kind: ConfigMap
-      name: bijouxlabs-replacements
-      fieldPath: data.LB_IP_TAUC_SPEEDTEST
-    targets:
-      - select:
-          kind: Service
-          name: tauc-speedtest
-        fieldPaths:
-          - spec.loadBalancerIP
-
-  - source:
-      kind: ConfigMap
-      name: bijouxlabs-replacements
-      fieldPath: data.LB_IP_HOMEASSISTANT
-    targets:
-      - select:
-          kind: Service
-          name: homeassistant
-        fieldPaths:
-          - spec.loadBalancerIP
-
   # MetalLB IP Pool Configuration
   - source:
       kind: ConfigMap
@@ -282,14 +259,3 @@ replacements:
         fieldPaths:
           - spec.template.spec.containers.0.env.[name=domain].value
 
-  # Longhorn Load Balancer IP
-  - source:
-      kind: ConfigMap
-      name: bijouxlabs-replacements
-      fieldPath: data.LB_IP_LONGHORN
-    targets:
-      - select:
-          kind: Service
-          name: longhorn-frontend-lb
-        fieldPaths:
-          - spec.loadBalancerIP
