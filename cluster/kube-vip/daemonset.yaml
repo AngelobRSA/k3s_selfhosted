@@ -3,6 +3,8 @@ kind: DaemonSet
 metadata:
   name: kube-vip
   namespace: kube-system
+  annotations:
+    kustomize.toolkit.fluxcd.io/ssa: ignore
 spec:
   selector:
     matchLabels: { app: kube-vip }
