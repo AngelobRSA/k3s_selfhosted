@@ -137,7 +137,7 @@ replacements:
   - source:
       kind: ConfigMap
       name: bijouxlabs-replacements
-      fieldPath: data.NAMESPACES_APPLICATIONS
+      fieldPath: data.NAMESPACE_APPLICATIONS
     targets:
       - select:
           kind: Service
@@ -185,7 +185,7 @@ replacements:
   - source:
       kind: ConfigMap
       name: bijouxlabs-replacements
-      fieldPath: data.PORT_TAUCSPEEDTEST
+      fieldPath: data.PORT_TAUC_SPEEDTEST
     targets:
       - select:
           kind: Service
@@ -196,7 +196,7 @@ replacements:
   - source:
       kind: ConfigMap
       name: bijouxlabs-replacements
-      fieldPath: data.PORTS_HOMEASSISTANT
+      fieldPath: data.PORT_HOMEASSISTANT
     targets:
       - select:
           kind: Ingress
