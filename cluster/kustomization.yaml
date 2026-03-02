@@ -21,26 +21,6 @@ replacements:
   - source:
       kind: ConfigMap
       name: bijouxlabs-replacements
-      fieldPath: data.METALLB_IP_POOL_START
-    targets:
-      - select:
-          kind: IPAddressPool
-          name: ippool
-        fieldPaths:
-          - spec.addresses.0
-  - source:
-      kind: ConfigMap
-      name: bijouxlabs-replacements
-      fieldPath: data.METALLB_IP_POOL_END
-    targets:
-      - select:
-          kind: IPAddressPool
-          name: ippool
-        fieldPaths:
-          - spec.addresses.0
-  - source:
-      kind: ConfigMap
-      name: bijouxlabs-replacements
       fieldPath: data.LB_IP_TRAEFIK
     targets:
       - select:
@@ -219,27 +199,6 @@ replacements:
           kind: Ingress
         fieldPaths:
           - spec.ingressClassName
-
-  # MetalLB IP Pool Configuration
-  - source:
-      kind: ConfigMap
-      name: bijouxlabs-replacements
-      fieldPath: data.METALLB_IP_POOL_START
-    targets:
-      - select:
-          kind: IPAddressPool
-        fieldPaths:
-          - spec.addresses.0
-
-  - source:
-      kind: ConfigMap
-      name: bijouxlabs-replacements
-      fieldPath: data.METALLB_IP_POOL_END
-    targets:
-      - select:
-          kind: IPAddressPool
-        fieldPaths:
-          - spec.addresses.0
 
   # Domain Configuration - OpenGist
   - source:
