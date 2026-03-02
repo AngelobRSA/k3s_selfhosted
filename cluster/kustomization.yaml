@@ -7,6 +7,7 @@ kind: Kustomization
 # cluster/replacements.sops.yaml and applied cluster-wide via replacements.
 
 resources:
+  - flux-system
   - kube-vip
   - metallb
   - cilium
