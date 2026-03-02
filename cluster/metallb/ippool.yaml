@@ -3,6 +3,8 @@ kind: IPAddressPool
 metadata:
   name: lan-pool
   namespace: metallb-system
+  annotations:
+    kustomize.toolkit.fluxcd.io/ssa: ignore
 spec:
   addresses:
     - $(METALLB_IP_POOL_START)-$(METALLB_IP_POOL_END)
