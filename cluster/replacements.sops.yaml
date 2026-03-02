@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
     name: bijouxlabs-replacements
-    namespace: default
+    namespace: flux-system
 data:
     #ENC[AES256_GCM,data:EFx9VFCLLen3xz+Q4+tMJpp08EtUJA==,iv:cvdScySlVEGUPG5PsKz3whRO53Mb+AzzoLNNTRUvcKk=,tag:NrVXKAGDeI2SKPwfcWANZA==,type:comment]
     METALLB_IP_POOL_START: ENC[AES256_GCM,data:4cHqZzQb081TqEhMnA==,iv:zLrti7J3I/Ln1JSbt3WgJaPOZRUgaPkZhEoKfGENzt8=,tag:OV+Z+GyC9VybxGOgxxzSjQ==,type:str]
