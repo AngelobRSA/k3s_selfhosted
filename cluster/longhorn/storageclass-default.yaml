@@ -4,6 +4,7 @@ metadata:
   name: longhorn
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
+    kustomize.toolkit.fluxcd.io/ssa: ignore
 provisioner: driver.longhorn.io
 reclaimPolicy: Delete
 allowVolumeExpansion: true
