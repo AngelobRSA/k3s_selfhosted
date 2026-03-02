@@ -1,0 +1,99 @@
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: OCIRepository
+metadata:
+  name: immich
+  namespace: immich
+spec:
+  interval: 12h
+  url: oci://ghcr.io/immich-app/immich-charts/immich
+  ref:
+    tag: "0.10.3"
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: immich
+  namespace: immich
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: immich
+    namespace: immich
+  values:
+    # Shared across all Immich components
+    controllers:
+      main:
+        containers:
+          main:
+            image:
+              tag: v2.5.6
+            env:
+              REDIS_HOSTNAME: '{{ printf "%s-valkey" .Release.Name }}'
+              IMMICH_MACHINE_LEARNING_URL: '{{ printf "http://%s-machine-learning:3003" .Release.Name }}'
+              DB_HOSTNAME:
+                valueFrom:
+                  secretKeyRef:
+                    name: immich-db-app
+                    key: host
+              DB_PORT:
+                valueFrom:
+                  secretKeyRef:
+                    name: immich-db-app
+                    key: port
+              DB_USERNAME:
+                valueFrom:
+                  secretKeyRef:
+                    name: immich-db-app
+                    key: username
+              DB_PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    name: immich-db-app
+                    key: password
+              DB_DATABASE_NAME:
+                valueFrom:
+                  secretKeyRef:
+                    name: immich-db-app
+                    key: dbname
+
+    immich:
+      persistence:
+        library:
+          existingClaim: immich-library
+
+    # Valkey (Redis-compatible) for job queues
+    valkey:
+      enabled: true
+      persistence:
+        data:
+          type: emptyDir
+
+    # Immich server with Traefik ingress
+    server:
+      ingress:
+        main:
+          enabled: true
+          annotations:
+            traefik.ingress.kubernetes.io/router.entrypoints: websecure
+            traefik.ingress.kubernetes.io/router.tls: "true"
+            traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+          ingressClassName: traefik
+          hosts:
+            - host: photos.bijouxlabs.cc
+              paths:
+                - path: /
+                  service:
+                    identifier: main
+          tls:
+            - hosts:
+                - photos.bijouxlabs.cc
+
+    # Machine learning (facial recognition + smart search)
+    machine-learning:
+      enabled: true
+      persistence:
+        cache:
+          enabled: true
+          type: emptyDir
+          size: 10Gi

@@ -12,6 +12,7 @@ resources:
   - cilium
   - traefik
   - longhorn
+  - cnpg
   - replacements.sops.yaml
 
 # Centralized Replacements mapping ConfigMap values to manifest fields
