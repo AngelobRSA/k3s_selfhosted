@@ -7,3 +7,7 @@ creation_rules:
   - path_regex: cluster/traefik/secrets/.*\.ya?ml$
     age: ["age1k8za0kdd9332n5uu9mfq2gqamre6fazx0qa5f4xxmd2e5wx3tq7q2d7nt6"]
     encrypted_regex: '^(data|stringData)$'
+  # App secrets - encrypted data fields only
+  - path_regex: apps/.*/secrets/.*\.ya?ml$
+    age: ["age1k8za0kdd9332n5uu9mfq2gqamre6fazx0qa5f4xxmd2e5wx3tq7q2d7nt6"]
+    encrypted_regex: '^(data|stringData)$'
