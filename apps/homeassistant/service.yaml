@@ -2,10 +2,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: homeassistant
-  namespace: $(NAMESPACES_APPLICATIONS)
+  namespace: $(NAMESPACE_APPLICATIONS)
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: $(LB_IP_HOMEASSISTANT)
 spec:
   type: LoadBalancer
-  LoadBalancerIP: $(LB_IP_HOMEASSISTANT)
   selector:
     app: home-assistant
   ports:
