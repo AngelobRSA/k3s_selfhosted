@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: homeassistant
-  namespace: $(NAMESPACES_APPLICATIONS)
+  namespace: $(NAMESPACE_APPLICATIONS)
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"

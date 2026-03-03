@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: iperf3
-  namespace: $(NAMESPACES_APPLICATIONS)
+  namespace: $(NAMESPACE_APPLICATIONS)
 spec:
   replicas: 1
   selector:
