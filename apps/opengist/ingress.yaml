@@ -6,12 +6,12 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/router.tls.certresolver: $(TLS_CERT_RESOLVER)
+    traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
     traefik.ingress.kubernetes.io/router.middlewares: bijouxlabs-allow-ha-lan@kubernetescrd
 spec:
-  ingressClassName: $(TLS_INGRESS_CLASS)
+  ingressClassName: traefik
   rules:
-  - host: $(DOMAIN_OPENGIST)
+  - host: opengist.bijouxlabs.cc
     http:
       paths:
       - path: /
@@ -22,4 +22,5 @@ spec:
             port:
               number: 6157
   tls:
-  - hosts: [$(DOMAIN_OPENGIST)]
+  - hosts:
+    - opengist.bijouxlabs.cc
