@@ -141,24 +141,8 @@ replacements:
         fieldPaths:
           - metadata.namespace
       - select:
-          kind: Deployment
-        fieldPaths:
-          - metadata.namespace
-      - select:
-          kind: Ingress
-        fieldPaths:
-          - metadata.namespace
-      - select:
-          kind: PersistentVolumeClaim
-        fieldPaths:
-          - metadata.namespace
-      - select:
           kind: ConfigMap
           name: tauc-speedtest
-        fieldPaths:
-          - metadata.namespace
-      - select:
-          kind: Endpoints
         fieldPaths:
           - metadata.namespace
 
