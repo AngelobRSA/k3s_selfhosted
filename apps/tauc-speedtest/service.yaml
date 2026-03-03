@@ -2,16 +2,15 @@ apiVersion: v1
 kind: Service
 metadata:
   name: tauc-speedtest
-  namespace: $(NAMESPACES_APPLICATIONS)
+  namespace: $(NAMESPACE_APPLICATIONS)
   annotations:
-    metallb.universe.tf/address-pool: lan-pool
+    metallb.universe.tf/loadBalancerIPs: $(LB_IP_TAUC_SPEEDTEST)
 spec:
   type: LoadBalancer
-  loadBalancerIP: $(LB_IP_TAUCSPEEDTEST)
   selector:
     app: tauc-speedtest
   ports:
     - name: http-8089
       port: 8089
-      targetPort: $(PORT_TAUCSPEEDTEST)
+      targetPort: $(PORT_TAUC_SPEEDTEST)
       protocol: TCP
