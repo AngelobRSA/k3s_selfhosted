@@ -4,3 +4,4 @@ resources:
   - immich
   - iperf3
   - opengist
+  - uptime-kuma
