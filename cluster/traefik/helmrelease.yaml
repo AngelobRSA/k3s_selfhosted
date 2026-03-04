@@ -34,16 +34,15 @@ spec:
       path: /data
       size: 1Gi
       accessMode: ReadWriteOnce
-    deployment:
-      additionalArguments:
-        - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-        - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-        - "--certificatesresolvers.cloudflare.acme.email=angelo.bijoux@gmail.com"
-        - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
-        - "--certificatesresolvers.cloudflare.acme.storage=/data/acme.json"
-      envFrom:
-        - secretRef:
-            name: traefik-acme
+    additionalArguments:
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--certificatesresolvers.cloudflare.acme.email=angelo.bijoux@gmail.com"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
+      - "--certificatesresolvers.cloudflare.acme.storage=/data/acme.json"
+    envFrom:
+      - secretRef:
+          name: traefik-acme
     ingressClass:
       enabled: true
       isDefaultClass: true
