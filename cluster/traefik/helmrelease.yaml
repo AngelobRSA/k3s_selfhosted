@@ -41,6 +41,7 @@ spec:
       - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
       - "--certificatesresolvers.cloudflare.acme.storage=/data/acme.json"
       - "--providers.kubernetescrd.allowCrossNamespace=true"
+      - "--serversTransport.insecureSkipVerify=true"
     envFrom:
       - secretRef:
           name: traefik-acme
