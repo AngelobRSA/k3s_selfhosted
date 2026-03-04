@@ -1,0 +1,263 @@
+---
+# Services (headless — backends are physical Proxmox hosts via Endpoints)
+apiVersion: v1
+kind: Service
+metadata:
+  name: proxmox
+  namespace: bijouxlabs
+spec:
+  type: ClusterIP
+  ports:
+    - name: https
+      port: 8006
+      targetPort: 8006
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node01m910
+  namespace: bijouxlabs
+spec:
+  type: ClusterIP
+  ports:
+    - name: https
+      port: 8006
+      targetPort: 8006
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node02m910
+  namespace: bijouxlabs
+spec:
+  type: ClusterIP
+  ports:
+    - name: https
+      port: 8006
+      targetPort: 8006
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node03m920
+  namespace: bijouxlabs
+spec:
+  type: ClusterIP
+  ports:
+    - name: https
+      port: 8006
+      targetPort: 8006
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node04g4800
+  namespace: bijouxlabs
+spec:
+  type: ClusterIP
+  ports:
+    - name: https
+      port: 8006
+      targetPort: 8006
+---
+# Endpoints — map services to physical Proxmox host IPs
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: proxmox
+  namespace: bijouxlabs
+subsets:
+  - addresses:
+      - ip: 192.168.0.110
+    ports:
+      - name: https
+        port: 8006
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: node01m910
+  namespace: bijouxlabs
+subsets:
+  - addresses:
+      - ip: 192.168.0.211
+    ports:
+      - name: https
+        port: 8006
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: node02m910
+  namespace: bijouxlabs
+subsets:
+  - addresses:
+      - ip: 192.168.0.212
+    ports:
+      - name: https
+        port: 8006
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: node03m920
+  namespace: bijouxlabs
+subsets:
+  - addresses:
+      - ip: 192.168.0.213
+    ports:
+      - name: https
+        port: 8006
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: node04g4800
+  namespace: bijouxlabs
+subsets:
+  - addresses:
+      - ip: 192.168.0.214
+    ports:
+      - name: https
+        port: 8006
+---
+# Ingresses
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: proxmox
+  namespace: bijouxlabs
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+    traefik.ingress.kubernetes.io/service.serversscheme: https
+    traefik.ingress.kubernetes.io/preserve-host: "false"
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: proxmox.bijouxlabs.cc
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: proxmox
+                port:
+                  number: 8006
+  tls:
+    - hosts:
+        - proxmox.bijouxlabs.cc
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: node01m910
+  namespace: bijouxlabs
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+    traefik.ingress.kubernetes.io/service.serversscheme: https
+    traefik.ingress.kubernetes.io/preserve-host: "false"
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: node01m910.bijouxlabs.cc
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: node01m910
+                port:
+                  number: 8006
+  tls:
+    - hosts:
+        - node01m910.bijouxlabs.cc
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: node02m910
+  namespace: bijouxlabs
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+    traefik.ingress.kubernetes.io/service.serversscheme: https
+    traefik.ingress.kubernetes.io/preserve-host: "false"
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: node02m910.bijouxlabs.cc
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: node02m910
+                port:
+                  number: 8006
+  tls:
+    - hosts:
+        - node02m910.bijouxlabs.cc
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: node03m920
+  namespace: bijouxlabs
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+    traefik.ingress.kubernetes.io/service.serversscheme: https
+    traefik.ingress.kubernetes.io/preserve-host: "false"
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: node03m920.bijouxlabs.cc
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: node03m920
+                port:
+                  number: 8006
+  tls:
+    - hosts:
+        - node03m920.bijouxlabs.cc
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: node04g4800
+  namespace: bijouxlabs
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+    traefik.ingress.kubernetes.io/service.serversscheme: https
+    traefik.ingress.kubernetes.io/preserve-host: "false"
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: node04g4800.bijouxlabs.cc
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: node04g4800
+                port:
+                  number: 8006
+  tls:
+    - hosts:
+        - node04g4800.bijouxlabs.cc
