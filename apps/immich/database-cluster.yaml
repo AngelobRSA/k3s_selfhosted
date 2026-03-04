@@ -15,7 +15,7 @@ spec:
   bootstrap:
     initdb:
       database: immich
-      owner: immich
+      owner: app
       secret:
         name: immich-db-credentials
       postInitApplicationSQL:
