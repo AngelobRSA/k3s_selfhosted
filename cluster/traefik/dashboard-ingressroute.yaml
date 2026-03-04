@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`traefik.bijouxlabs.cc`)
+    - match: Host(`traefik.bijouxlabs.cc`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
       kind: Rule
       middlewares:
         - name: allow-ha-lan
