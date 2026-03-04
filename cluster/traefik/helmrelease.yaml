@@ -40,6 +40,7 @@ spec:
       - "--certificatesresolvers.cloudflare.acme.email=angelo.bijoux@gmail.com"
       - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
       - "--certificatesresolvers.cloudflare.acme.storage=/data/acme.json"
+      - "--providers.kubernetescrd.allowCrossNamespaceMiddleware=true"
     envFrom:
       - secretRef:
           name: traefik-acme
