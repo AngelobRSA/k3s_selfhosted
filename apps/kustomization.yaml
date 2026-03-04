@@ -4,5 +4,6 @@ resources:
   - homepage
   - immich
   - iperf3
+  - n8n
   - opengist
   - uptime-kuma
