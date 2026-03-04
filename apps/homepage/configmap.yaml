@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  namespace: homepage
+data:
+  settings.yaml: |
+    title: Bijoux Labs
+    theme: dark
+    color: slate
+    headerStyle: boxed
+    cardBlur: sm
+    hideVersion: true
+    statusStyle: dot
+
+  widgets.yaml: |
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: k3s
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+    - datetime:
+        text_size: xl
+        format:
+          dateStyle: long
+          timeStyle: short
+          hourCycle: h23
+    - search:
+        provider: duckduckgo
+        target: _blank
+
+  services.yaml: |
+    - Media:
+        - Immich:
+            href: https://photos.bijouxlabs.cc
+            description: Photo management & facial recognition
+            icon: immich.png
+            siteMonitor: https://photos.bijouxlabs.cc
+
+    - Infrastructure:
+        - Traefik:
+            href: https://traefik.bijouxlabs.cc/dashboard/
+            description: Reverse proxy
+            icon: traefik.png
+            siteMonitor: https://traefik.bijouxlabs.cc/dashboard/
+        - Uptime Kuma:
+            href: https://uptime.bijouxlabs.cc
+            description: Uptime monitoring
+            icon: uptime-kuma.png
+            siteMonitor: https://uptime.bijouxlabs.cc
+        - Longhorn:
+            href: http://192.168.0.169/longhorn
+            description: Distributed block storage
+            icon: longhorn.png
+
+    - Development:
+        - Opengist:
+            href: https://opengist.bijouxlabs.cc
+            description: Self-hosted Gist
+            icon: si-github
+            siteMonitor: https://opengist.bijouxlabs.cc
+
+    - Proxmox:
+        - Proxmox:
+            href: https://proxmox.bijouxlabs.cc
+            description: Hypervisor cluster
+            icon: proxmox.png
+            siteMonitor: https://proxmox.bijouxlabs.cc
+        - node01m910:
+            href: https://node01m910.bijouxlabs.cc
+            description: Proxmox node 01
+            icon: proxmox.png
+        - node02m910:
+            href: https://node02m910.bijouxlabs.cc
+            description: Proxmox node 02
+            icon: proxmox.png
+        - node03m920:
+            href: https://node03m920.bijouxlabs.cc
+            description: Proxmox node 03
+            icon: proxmox.png
+        - node04g4800:
+            href: https://node04g4800.bijouxlabs.cc
+            description: Proxmox node 04
+            icon: proxmox.png
+
+  bookmarks.yaml: |
+    - Cluster:
+        - GitHub Repo:
+            - href: https://github.com/AngelobRSA/k3s_selfhosted
+              icon: github.png
+        - Flux Dashboard:
+            - href: https://github.com/AngelobRSA/k3s_selfhosted/actions
+              icon: github-actions.png
+
+  kubernetes.yaml: |
+    mode: cluster
+
+  docker.yaml: |
