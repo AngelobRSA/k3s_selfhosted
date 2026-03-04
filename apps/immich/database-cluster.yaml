@@ -16,8 +16,6 @@ spec:
     initdb:
       database: immich
       owner: app
-      secret:
-        name: immich-db-credentials
       postInitApplicationSQL:
         - CREATE EXTENSION IF NOT EXISTS vchord CASCADE;
         - CREATE EXTENSION IF NOT EXISTS cube CASCADE;
