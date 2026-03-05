@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crowdsec-traefik-bouncer
+  namespace: crowdsec
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crowdsec-traefik-bouncer
+  template:
+    metadata:
+      labels:
+        app: crowdsec-traefik-bouncer
+    spec:
+      containers:
+        - name: bouncer
+          image: fbonalair/traefik-crowdsec-bouncer:latest
+          env:
+            - name: CROWDSEC_BOUNCER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: crowdsec-bouncer-key
+                  key: api-key
+            - name: CROWDSEC_AGENT_HOST
+              value: crowdsec-service.crowdsec.svc.cluster.local:8080
+            - name: GIN_MODE
+              value: release
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crowdsec-traefik-bouncer
+  namespace: crowdsec
+spec:
+  selector:
+    app: crowdsec-traefik-bouncer
+  ports:
+    - port: 8080
+      targetPort: 8080
