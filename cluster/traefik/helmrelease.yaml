@@ -37,6 +37,9 @@ spec:
     additionalArguments:
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--accesslog=true"
+      - "--accesslog.format=json"
+      - "--entryPoints.websecure.http.middlewares=crowdsec-crowdsec-bouncer@kubernetescrd"
       - "--certificatesresolvers.cloudflare.acme.email=angelo.bijoux@gmail.com"
       - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
       - "--certificatesresolvers.cloudflare.acme.storage=/data/acme.json"

@@ -1,0 +1,48 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: crowdsec
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://crowdsecurity.github.io/helm-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: crowdsec
+  namespace: crowdsec
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: crowdsec
+      version: ">=0.10.0 <1.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: crowdsec
+        namespace: flux-system
+  values:
+    container_runtime: containerd
+
+    lapi:
+      dashboard:
+        enabled: false
+      # Pre-register the traefik bouncer with our generated key
+      env:
+        - name: BOUNCER_KEY_traefik-bouncer
+          valueFrom:
+            secretKeyRef:
+              name: crowdsec-bouncer-key
+              key: api-key
+
+    agent:
+      # Read Traefik pod logs via the Kubernetes API
+      acquisition:
+        - namespace: traefik
+          podName: traefik-*
+          program: traefik
+      env:
+        # Install the Traefik collection (log parsers + scenarios)
+        - name: COLLECTIONS
+          value: "crowdsecurity/traefik crowdsecurity/http-cve"
