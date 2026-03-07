@@ -2,9 +2,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: tauc-speedtest
-  namespace: $(NAMESPACE_APPLICATIONS)
+  namespace: bijouxlabs
   annotations:
-    metallb.universe.tf/loadBalancerIPs: $(LB_IP_TAUC_SPEEDTEST)
+    metallb.universe.tf/loadBalancerIPs: "192.168.0.161"
 spec:
   type: LoadBalancer
   selector:
@@ -12,5 +12,5 @@ spec:
   ports:
     - name: http-8089
       port: 8089
-      targetPort: $(PORT_TAUC_SPEEDTEST)
+      targetPort: 8089
       protocol: TCP
