@@ -27,7 +27,7 @@ spec:
     service:
       type: LoadBalancer
       annotations:
-        metallb.universe.tf/loadBalancerIPs: $(LB_IP_TRAEFIK)
+        metallb.universe.tf/loadBalancerIPs: "192.168.0.169"
       externalTrafficPolicy: Local
     persistence:
       enabled: true
