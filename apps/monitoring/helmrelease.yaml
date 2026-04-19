@@ -1,0 +1,67 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: prometheus-community
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://prometheus-community.github.io/helm-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kube-prometheus-stack
+  namespace: monitoring
+spec:
+  releaseName: kube-prometheus-stack
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      version: "67.x"
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+  interval: 30m
+  values:
+    # k3s embeds these components and does not expose their metrics endpoints
+    kubeControllerManager:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    kubeEtcd:
+      enabled: false
+    kubeProxy:
+      enabled: false
+
+    prometheus:
+      prometheusSpec:
+        scrapeInterval: 30s
+        retention: 30d
+        storageSpec:
+          volumeClaimTemplate:
+            metadata:
+              annotations:
+                volume.longhorn.io/number-of-replicas: "1"
+            spec:
+              storageClassName: longhorn
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 25Gi
+
+    grafana:
+      fullnameOverride: grafana
+      ingress:
+        enabled: true
+        ingressClassName: traefik
+        annotations:
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.tls: "true"
+          traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+          traefik.ingress.kubernetes.io/router.middlewares: bijouxlabs-allow-ha-lan@kubernetescrd
+        hosts:
+          - grafana.bijouxlabs.cc
+        tls:
+          - hosts:
+              - grafana.bijouxlabs.cc
