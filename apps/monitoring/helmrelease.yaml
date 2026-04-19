@@ -40,11 +40,8 @@ spec:
         retention: 30d
         storageSpec:
           volumeClaimTemplate:
-            metadata:
-              annotations:
-                volume.longhorn.io/number-of-replicas: "1"
             spec:
-              storageClassName: longhorn
+              storageClassName: longhorn-single
               accessModes: ["ReadWriteOnce"]
               resources:
                 requests:
