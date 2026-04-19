@@ -9,9 +9,6 @@ spec:
   routes:
     - match: Host(`traefik.bijouxlabs.cc`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
       kind: Rule
-      middlewares:
-        - name: allow-ha-lan
-          namespace: bijouxlabs
       services:
         - name: api@internal
           kind: TraefikService
