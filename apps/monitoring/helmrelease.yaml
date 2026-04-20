@@ -49,6 +49,9 @@ spec:
 
     grafana:
       fullnameOverride: grafana
+      grafana.ini:
+        server:
+          root_url: https://grafana.bijouxlabs.cc
       ingress:
         enabled: true
         ingressClassName: traefik
