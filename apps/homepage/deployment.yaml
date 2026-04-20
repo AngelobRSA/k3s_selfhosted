@@ -28,13 +28,38 @@ spec:
             - name: HOMEPAGE_ALLOWED_HOSTS
               value: home.bijouxlabs.cc
           volumeMounts:
-            - name: config
+            - name: config-dir
               mountPath: /app/config
-            - name: logs
-              mountPath: /app/config/logs
+            - name: config-settings
+              mountPath: /app/config/settings.yaml
+              subPath: settings.yaml
+            - name: config-widgets
+              mountPath: /app/config/widgets.yaml
+              subPath: widgets.yaml
+            - name: config-services
+              mountPath: /app/config/services.yaml
+              subPath: services.yaml
+            - name: config-bookmarks
+              mountPath: /app/config/bookmarks.yaml
+              subPath: bookmarks.yaml
+            - name: config-kubernetes
+              mountPath: /app/config/kubernetes.yaml
+              subPath: kubernetes.yaml
       volumes:
-        - name: config
+        - name: config-dir
+          emptyDir: {}
+        - name: config-settings
           configMap:
             name: homepage-config
-        - name: logs
-          emptyDir: {}
+        - name: config-widgets
+          configMap:
+            name: homepage-config
+        - name: config-services
+          configMap:
+            name: homepage-config
+        - name: config-bookmarks
+          configMap:
+            name: homepage-config
+        - name: config-kubernetes
+          configMap:
+            name: homepage-config
