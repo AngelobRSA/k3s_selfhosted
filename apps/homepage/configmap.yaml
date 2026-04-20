@@ -56,11 +56,22 @@ data:
             icon: uptime-kuma.png
             siteMonitor: https://uptime.bijouxlabs.cc
         - Longhorn:
-            href: http://192.168.0.169/longhorn
+            href: http://192.168.0.168
             description: Distributed block storage
             icon: longhorn.png
+            siteMonitor: http://192.168.0.168
+        - Grafana:
+            href: https://grafana.bijouxlabs.cc
+            description: Cluster metrics & dashboards
+            icon: grafana.png
+            siteMonitor: https://grafana.bijouxlabs.cc
 
-    - Development:
+    - Automation:
+        - n8n:
+            href: https://n8n.bijouxlabs.cc
+            description: Self-hosted n8n
+            icon: n8n.png
+            siteMonitor: https://n8n.bijouxlabs.cc
         - Opengist:
             href: https://opengist.bijouxlabs.cc
             description: Self-hosted Gist
