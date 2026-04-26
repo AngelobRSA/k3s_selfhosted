@@ -1,0 +1,30 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "flux": {
+    "enabled": true
+  },
+  "kubernetes": {
+    "fileMatch": [
+      "apps/.+\\.yaml$",
+      "cluster/.+\\.yaml$"
+    ]
+  },
+  "schedule": ["every weekend"],
+  "prConcurrentLimit": 5,
+  "packageRules": [
+    {
+      "matchFileNames": ["cluster/**"],
+      "groupName": "Cluster infra",
+      "automerge": false
+    },
+    {
+      "matchFileNames": ["apps/**"],
+      "groupName": "Apps",
+      "automerge": true,
+      "matchUpdateTypes": ["minor", "patch"]
+    }
+  ]
+}
