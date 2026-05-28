@@ -1,47 +1,40 @@
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: home-assistant
-  namespace: $(NAMESPACE_APPLICATIONS)
-  annotations:
-    reloader.stakater.com/auto: "true"
+  name: homeassistant
+  namespace: homeassistant
 spec:
+  replicas: 1
   selector:
     matchLabels:
-      app: home-assistant
-  replicas: 1
-  progressDeadlineSeconds: 600
-  revisionHistoryLimit: 2
+      app: homeassistant
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: home-assistant
-      annotations:
-        deploy-date: "deploy-date-value"
+        app: homeassistant
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: kworker01
       containers:
-        - name: home-assistant
-          image: homeassistant/home-assistant:2026.4.3
-          resources:
-            requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
+        - name: homeassistant
+          image: homeassistant/home-assistant:2026.5.4
           ports:
             - containerPort: 8123
           env:
             - name: TZ
-              value: "Africa/Johannesburg"
+              value: Africa/Johannesburg
           volumeMounts:
             - mountPath: /config
-              name: home-assistant-content
+              name: config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
       volumes:
-        - name: home-assistant-content
+        - name: config
           persistentVolumeClaim:
-            claimName: home-assistant-claim
-      hostNetwork: true
+            claimName: homeassistant-config

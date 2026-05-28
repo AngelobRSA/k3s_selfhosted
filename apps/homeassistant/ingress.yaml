@@ -2,23 +2,24 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: homeassistant
-  namespace: $(NAMESPACE_APPLICATIONS)
+  namespace: homeassistant
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/router.tls.certresolver: $(TLS_CERT_RESOLVER)
+    traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
 spec:
-  ingressClassName: $(TLS_INGRESS_CLASS)
+  ingressClassName: traefik
   rules:
-  - host: $(DOMAIN_HOMEASSISTANT)
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: homeassistant
-            port:
-              number: 8123
+    - host: homeassistant.bijouxlabs.cc
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: homeassistant
+                port:
+                  number: 8123
   tls:
-  - hosts: [$(DOMAIN_HOMEASSISTANT)]
+    - hosts:
+        - homeassistant.bijouxlabs.cc
