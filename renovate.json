@@ -12,7 +12,6 @@
       "cluster/.+\\.yaml$"
     ]
   },
-  "schedule": ["every weekend"],
   "prConcurrentLimit": 5,
   "packageRules": [
     {
