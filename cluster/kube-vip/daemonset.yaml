@@ -34,7 +34,7 @@ spec:
             - --leaderElection
             - --interface=ens18
             - --vip=192.168.0.220
-            - --vipSubnet=/32
+            - --vipSubnet=32
           env:
             - name: KUBERNETES_SERVICE_HOST
               value: "10.43.0.1"
