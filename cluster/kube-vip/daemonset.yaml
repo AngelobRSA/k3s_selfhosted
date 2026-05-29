@@ -3,8 +3,6 @@ kind: DaemonSet
 metadata:
   name: kube-vip
   namespace: kube-system
-  annotations:
-    kustomize.toolkit.fluxcd.io/ssa: ignore
 spec:
   selector:
     matchLabels: { app: kube-vip }
@@ -26,18 +24,22 @@ spec:
         - key: "node-role.kubernetes.io/master"
           operator: "Exists"
           effect: "NoSchedule"
-
-      # ensure the pod can resolve your masters by name (belt + braces)
-      hostAliases:
-        - ip: "$(KUBEVIP_MASTER_01_IP)"
-          hostnames: ["kmaster01"]
-        - ip: "$(KUBEVIP_MASTER_02_IP)"
-          hostnames: ["kmaster02"]
-        - ip: "$(KUBEVIP_MASTER_03_IP)"
-          hostnames: ["kmaster03"]
-
       containers:
         - name: kube-vip
+          image: ghcr.io/kube-vip/kube-vip:v1.2.0
+          args:
+            - manager
+            - --arp
+            - --controlplane
+            - --leaderElection
+            - --interface=ens18
+            - --vip=192.168.0.220
+            - --vipSubnet=/32
+          env:
+            - name: KUBERNETES_SERVICE_HOST
+              value: "10.43.0.1"
+            - name: KUBERNETES_SERVICE_PORT
+              value: "443"
           resources:
             requests:
               cpu: 50m
@@ -45,22 +47,6 @@ spec:
             limits:
               cpu: 100m
               memory: 200Mi
-          image: ghcr.io/kube-vip/kube-vip:$(IMAGE_KUBEVIP_TAG)
-          # run in control-plane ARP mode, all params as flags (no DNS/CM lookups)
-          args:
-            - manager
-            - --arp
-            - --controlplane
-            - --leaderElection
-            - --interface=$(KUBEVIP_INTERFACE)
-            - --vip=$(KUBEVIP_VIRTUAL_IP)
-            - --cidr=$(KUBEVIP_VIRTUAL_IP_CIDR)
-          env:
-            # hard-pin the in-cluster API address so no 'kubernetes' DNS is needed
-            - name: KUBERNETES_SERVICE_HOST
-              value: "$(KUBEVIP_KUBERNETES_SERVICE_IP)"
-            - name: KUBERNETES_SERVICE_PORT
-              value: "$(KUBEVIP_KUBERNETES_SERVICE_PORT)"
           securityContext:
             capabilities:
               add: ["NET_ADMIN","NET_RAW"]

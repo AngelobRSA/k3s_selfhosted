@@ -3,7 +3,3 @@ namespace: kube-system
 resources:
   - rbac.yaml
   - daemonset.yaml
-
-images:
-  - name: ghcr.io/kube-vip/kube-vip
-    newTag: v1.2.0
