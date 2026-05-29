@@ -6,3 +6,4 @@ resources:
   - storageclass-default.yaml
   - storageclass-single.yaml
   - ui-lb.yaml
+  - secrets/b2-secret.yaml
