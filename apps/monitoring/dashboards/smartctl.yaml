@@ -1,0 +1,181 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-smartctl
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  smartctl.json: |
+    {
+      "title": "Smartctl / Drive Health",
+      "uid": "smartctl-bijouxlabs",
+      "schemaVersion": 38,
+      "version": 1,
+      "refresh": "5m",
+      "timezone": "browser",
+      "time": { "from": "now-24h", "to": "now" },
+      "templating": {
+        "list": [
+          {
+            "name": "nodename",
+            "label": "Node",
+            "type": "query",
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "query": "label_values(smartctl_device_temperature{job=\"proxmox-smartctl\"}, nodename)",
+            "refresh": 2,
+            "sort": 1,
+            "multi": false,
+            "includeAll": true,
+            "allValue": ".+",
+            "current": {}
+          },
+          {
+            "name": "device",
+            "label": "Device",
+            "type": "query",
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "query": "label_values(smartctl_device_temperature{job=\"proxmox-smartctl\",nodename=~\"$nodename\"}, device)",
+            "refresh": 2,
+            "sort": 1,
+            "multi": true,
+            "includeAll": true,
+            "allValue": ".+",
+            "current": {}
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "SMART Status",
+          "type": "stat",
+          "gridPos": { "x": 0, "y": 0, "w": 6, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                { "type": "value", "options": {
+                  "0": { "text": "FAIL", "color": "red", "index": 0 },
+                  "1": { "text": "PASS", "color": "green", "index": 1 }
+                }}
+              ],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] },
+              "color": { "mode": "thresholds" }
+            }
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+          "targets": [{ "expr": "smartctl_device_smart_status{job=\"proxmox-smartctl\",nodename=~\"$nodename\",device=~\"$device\"}", "legendFormat": "{{nodename}} / {{device}}", "refId": "A" }]
+        },
+        {
+          "id": 2,
+          "title": "Temperature (°C)",
+          "type": "gauge",
+          "gridPos": { "x": 6, "y": 0, "w": 6, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "min": 0, "max": 90, "unit": "celsius",
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 55 }, { "color": "red", "value": 70 }] },
+              "color": { "mode": "thresholds" }
+            }
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": false, "showThresholdMarkers": true },
+          "targets": [{ "expr": "smartctl_device_temperature{job=\"proxmox-smartctl\",nodename=~\"$nodename\",device=~\"$device\",temperature_type=\"current\"}", "legendFormat": "{{nodename}} / {{device}}", "refId": "A" }]
+        },
+        {
+          "id": 3,
+          "title": "NVMe Wear Level (%)",
+          "type": "gauge",
+          "gridPos": { "x": 12, "y": 0, "w": 6, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "min": 0, "max": 100, "unit": "percent",
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 90 }] },
+              "color": { "mode": "thresholds" }
+            }
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": false, "showThresholdMarkers": true },
+          "targets": [{ "expr": "smartctl_device_percentage_used{job=\"proxmox-smartctl\",nodename=~\"$nodename\",device=~\"$device\"}", "legendFormat": "{{nodename}} / {{device}}", "refId": "A" }]
+        },
+        {
+          "id": 4,
+          "title": "Available Spare (%)",
+          "type": "gauge",
+          "gridPos": { "x": 18, "y": 0, "w": 6, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "min": 0, "max": 100, "unit": "percent",
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 20 }, { "color": "green", "value": 50 }] },
+              "color": { "mode": "thresholds" }
+            }
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": false, "showThresholdMarkers": true },
+          "targets": [{ "expr": "smartctl_device_available_spare{job=\"proxmox-smartctl\",nodename=~\"$nodename\",device=~\"$device\"}", "legendFormat": "{{nodename}} / {{device}}", "refId": "A" }]
+        },
+        {
+          "id": 5,
+          "title": "Power-On Hours",
+          "type": "stat",
+          "gridPos": { "x": 0, "y": 8, "w": 8, "h": 6 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "h",
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "text", "value": null }] },
+              "color": { "mode": "thresholds" }
+            }
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "none" },
+          "targets": [{ "expr": "smartctl_device_power_on_seconds{job=\"proxmox-smartctl\",nodename=~\"$nodename\",device=~\"$device\"} / 3600", "legendFormat": "{{nodename}} / {{device}}", "refId": "A" }]
+        },
+        {
+          "id": 6,
+          "title": "Total Data Written",
+          "type": "stat",
+          "gridPos": { "x": 8, "y": 8, "w": 8, "h": 6 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "text", "value": null }] },
+              "color": { "mode": "thresholds" }
+            }
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "none" },
+          "targets": [{ "expr": "smartctl_device_bytes_written{job=\"proxmox-smartctl\",nodename=~\"$nodename\",device=~\"$device\"}", "legendFormat": "{{nodename}} / {{device}}", "refId": "A" }]
+        },
+        {
+          "id": 7,
+          "title": "Media Errors",
+          "type": "stat",
+          "gridPos": { "x": 16, "y": 8, "w": 8, "h": 6 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] },
+              "color": { "mode": "thresholds" }
+            }
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+          "targets": [{ "expr": "smartctl_device_media_errors{job=\"proxmox-smartctl\",nodename=~\"$nodename\",device=~\"$device\"}", "legendFormat": "{{nodename}} / {{device}}", "refId": "A" }]
+        },
+        {
+          "id": 8,
+          "title": "Temperature Over Time",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 14, "w": 24, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "celsius",
+              "color": { "mode": "palette-classic" }
+            }
+          },
+          "options": { "tooltip": { "mode": "multi", "sort": "none" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [{ "expr": "smartctl_device_temperature{job=\"proxmox-smartctl\",nodename=~\"$nodename\",device=~\"$device\",temperature_type=\"current\"}", "legendFormat": "{{nodename}} / {{device}}", "refId": "A" }]
+        }
+      ]
+    }
