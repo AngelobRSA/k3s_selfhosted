@@ -4,8 +4,9 @@ metadata:
   name: netbox
   namespace: flux-system
 spec:
+  type: oci
   interval: 12h
-  url: https://charts.netbox.dev
+  url: oci://ghcr.io/netbox-community/netbox-chart
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
