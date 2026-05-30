@@ -119,9 +119,5 @@ spec:
         default:
           smartctl-overview:
             gnetId: 20204
-            revision: 2
-            datasource: Prometheus
-          kubernetes-pod-resources:
-            gnetId: 19792
-            revision: 2
+            revision: 1
             datasource: Prometheus
