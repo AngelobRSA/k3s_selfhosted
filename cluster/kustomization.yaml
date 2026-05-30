@@ -63,16 +63,6 @@ replacements:
   - source:
       kind: ConfigMap
       name: bijouxlabs-replacements
-      fieldPath: data.LB_IP_TAUC_SPEEDTEST
-    targets:
-      - select:
-          kind: Service
-          name: tauc-speedtest
-        fieldPaths:
-          - metadata.annotations.metallb\.universe\.tf/address-pool
-  - source:
-      kind: ConfigMap
-      name: bijouxlabs-replacements
       fieldPath: data.LB_IP_HOMEASSISTANT
     targets:
       - select:
@@ -127,36 +117,9 @@ replacements:
           - metadata.namespace
       - select:
           kind: Service
-          name: tauc-speedtest
-        fieldPaths:
-          - metadata.namespace
-      - select:
-          kind: Service
           name: homeassistant
         fieldPaths:
           - metadata.namespace
-      - select:
-          kind: Service
-          name: iperf3
-        fieldPaths:
-          - metadata.namespace
-      - select:
-          kind: ConfigMap
-          name: tauc-speedtest
-        fieldPaths:
-          - metadata.namespace
-
-  # Port Configuration
-  - source:
-      kind: ConfigMap
-      name: bijouxlabs-replacements
-      fieldPath: data.PORT_TAUC_SPEEDTEST
-    targets:
-      - select:
-          kind: Service
-          name: tauc-speedtest
-        fieldPaths:
-          - spec.ports.0.targetPort
 
   - source:
       kind: ConfigMap

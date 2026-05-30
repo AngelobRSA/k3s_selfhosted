@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: copyparty
+  namespace: copyparty
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: copyparty.bijouxlabs.cc
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: copyparty
+                port:
+                  number: 3923
+  tls:
+    - hosts:
+        - copyparty.bijouxlabs.cc
