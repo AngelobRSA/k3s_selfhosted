@@ -24,6 +24,9 @@ spec:
           image: copyparty/ac:latest
           ports:
             - containerPort: 3923
+          args:
+            - "-v"
+            - ".::rw"
           volumeMounts:
             - name: data
               mountPath: /w

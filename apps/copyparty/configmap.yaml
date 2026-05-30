@@ -7,8 +7,3 @@ data:
   copyparty.conf: |
     [global]
     rproxy: -1
-
-    [/]
-    /w
-      accs:
-        *: rw
