@@ -115,9 +115,3 @@ spec:
               editable: true
               options:
                 path: /var/lib/grafana/dashboards/default
-      dashboards:
-        default:
-          smartctl-overview:
-            gnetId: 20204
-            revision: 1
-            datasource: Prometheus
