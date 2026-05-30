@@ -17,7 +17,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: opengist
-          image: ghcr.io/thomiceli/opengist:v1.12.1
+          image: ghcr.io/thomiceli/opengist:1.12.2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 6157
