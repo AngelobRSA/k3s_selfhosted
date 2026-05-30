@@ -81,7 +81,7 @@ spec:
               accessModes: ["ReadWriteOnce"]
               resources:
                 requests:
-                  storage: 25Gi
+                  storage: 50Gi
 
     grafana:
       fullnameOverride: grafana
@@ -100,3 +100,16 @@ spec:
         tls:
           - hosts:
               - grafana.bijouxlabs.cc
+      sidecar:
+        dashboards:
+          enabled: true
+      dashboards:
+        default:
+          smartctl-overview:
+            gnetId: 20204
+            revision: 2
+            datasource: Prometheus
+          kubernetes-pod-resources:
+            gnetId: 19792
+            revision: 2
+            datasource: Prometheus
