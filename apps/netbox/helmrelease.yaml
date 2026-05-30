@@ -60,6 +60,17 @@ spec:
         database: netbox
         existingSecretName: netbox-secret
         existingSecretKey: postgresql-password
+      primary:
+        persistence:
+          storageClass: longhorn-single
 
     redis:
       enabled: true
+
+    valkey:
+      primary:
+        persistence:
+          storageClass: longhorn-single
+      replica:
+        persistence:
+          storageClass: longhorn-single
