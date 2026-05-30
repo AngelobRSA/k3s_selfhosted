@@ -27,6 +27,8 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /w
+            - name: config
+              mountPath: /cfg
           resources:
             requests:
               cpu: 50m
@@ -37,3 +39,6 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: copyparty-data
+        - name: config
+          configMap:
+            name: copyparty-config
