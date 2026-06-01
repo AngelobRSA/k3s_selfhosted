@@ -45,10 +45,12 @@ spec:
 
     storage:
       data:
+        name: data
         size: "2Gi"
         class: longhorn-single
         accessMode: ReadWriteOnce
       attachments:
+        name: attachments
         size: "2Gi"
         class: longhorn-single
         accessMode: ReadWriteOnce
