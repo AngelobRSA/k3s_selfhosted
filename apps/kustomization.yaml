@@ -10,3 +10,4 @@ resources:
   - n8n
   - opengist
   - uptime-kuma
+  - vaultwarden
