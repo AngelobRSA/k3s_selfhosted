@@ -1,0 +1,54 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: vaultwarden
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://guerzon.github.io/vaultwarden
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vaultwarden
+  namespace: vaultwarden
+spec:
+  releaseName: vaultwarden
+  chart:
+    spec:
+      chart: vaultwarden
+      version: "0.x"
+      sourceRef:
+        kind: HelmRepository
+        name: vaultwarden
+        namespace: flux-system
+  interval: 30m
+  timeout: 10m
+  values:
+    image:
+      tag: "1.34.1"
+
+    adminToken:
+      existingSecret: vaultwarden-secret
+      existingSecretKey: admin-token
+
+    ingress:
+      enabled: true
+      class: traefik
+      hostname: vaultwarden.bijouxlabs.cc
+      tls: true
+      tlsSecret: ""
+      additionalAnnotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.tls: "true"
+        traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+
+    storage:
+      data:
+        size: "2Gi"
+        class: longhorn-single
+        accessMode: ReadWriteOnce
+      attachments:
+        size: "2Gi"
+        class: longhorn-single
+        accessMode: ReadWriteOnce
