@@ -11,3 +11,4 @@ resources:
   - opengist
   - uptime-kuma
   - vaultwarden
+  - radar

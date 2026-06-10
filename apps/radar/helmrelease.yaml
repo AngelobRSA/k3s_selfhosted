@@ -1,0 +1,54 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: skyhook
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://skyhook-io.github.io/helm-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: radar
+  namespace: radar
+spec:
+  releaseName: radar
+  chart:
+    spec:
+      chart: radar
+      sourceRef:
+        kind: HelmRepository
+        name: skyhook
+        namespace: flux-system
+  interval: 30m
+  values:
+    ingress:
+      enabled: true
+      className: traefik
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.tls: "true"
+        traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+      hosts:
+        - host: radar.bijouxlabs.cc
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - hosts:
+            - radar.bijouxlabs.cc
+
+    rbac:
+      podExec: false
+      portForward: false
+      secrets: false
+      helm: false
+
+    persistence:
+      enabled: true
+      storageClass: longhorn-single
+      size: 1Gi
+
+    timeline:
+      storage: sqlite
