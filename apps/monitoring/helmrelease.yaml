@@ -42,36 +42,36 @@ spec:
         additionalScrapeConfigs:
           - job_name: proxmox-node-exporter
             static_configs:
-              - targets: ['192.168.0.110:9100']
+              - targets: ["192.168.0.110:9100"]
                 labels:
                   nodename: proxmox
-              - targets: ['192.168.0.211:9100']
+              - targets: ["192.168.0.211:9100"]
                 labels:
                   nodename: node01m910
-              - targets: ['192.168.0.212:9100']
+              - targets: ["192.168.0.212:9100"]
                 labels:
                   nodename: node02m910
-              - targets: ['192.168.0.213:9100']
+              - targets: ["192.168.0.213:9100"]
                 labels:
                   nodename: node03m920
-              - targets: ['192.168.0.214:9100']
+              - targets: ["192.168.0.214:9100"]
                 labels:
                   nodename: node04g4800
           - job_name: proxmox-smartctl
             static_configs:
-              - targets: ['192.168.0.110:9633']
+              - targets: ["192.168.0.110:9633"]
                 labels:
                   nodename: proxmox
-              - targets: ['192.168.0.211:9633']
+              - targets: ["192.168.0.211:9633"]
                 labels:
                   nodename: node01m910
-              - targets: ['192.168.0.212:9633']
+              - targets: ["192.168.0.212:9633"]
                 labels:
                   nodename: node02m910
-              - targets: ['192.168.0.213:9633']
+              - targets: ["192.168.0.213:9633"]
                 labels:
                   nodename: node03m920
-              - targets: ['192.168.0.214:9633']
+              - targets: ["192.168.0.214:9633"]
                 labels:
                   nodename: node04g4800
         storageSpec:
@@ -82,6 +82,12 @@ spec:
               resources:
                 requests:
                   storage: 50Gi
+        resources:
+          requests:
+            cpu: 200m
+            memory: 2Gi
+          limits:
+            memory: 4Gi
 
     grafana:
       fullnameOverride: grafana
