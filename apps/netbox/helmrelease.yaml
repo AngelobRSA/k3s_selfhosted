@@ -74,3 +74,9 @@ spec:
       replica:
         persistence:
           storageClass: longhorn-single
+
+    extraConfig:
+      - values: |
+          API_TOKEN_PEPPERS = {
+              0: "92cdbed23b76cf69cf4e09980188c12882b64f3afe73c3a620067fb177444d42",
+          }

@@ -21,11 +21,6 @@ data:
           memory: true
           showLabel: true
           label: k3s
-        nodes:
-          show: true
-          cpu: true
-          memory: true
-          showLabel: true
     - datetime:
         text_size: xl
         format:
@@ -43,13 +38,30 @@ data:
             description: Photo management & facial recognition
             icon: immich.png
             siteMonitor: https://photos.bijouxlabs.cc
+    - File Management:
+        - Opengist:
+            href: https://opengist.bijouxlabs.cc
+            description: Self-hosted gist service
+            icon: opengist.png
+            siteMonitor: https://opengist.bijouxlabs.cc
+        - Copyparty:
+            href: https://files.bijouxlabs.cc
+            description: Self-hosted file sharing
+            icon: copyparty.png
+            siteMonitor: https://files.bijouxlabs.cc
+    - Web Tools:
+        - Vaultwarden:
+            href: https://vaultwarden.bijouxlabs.cc
+            description: Self-hosted password manager
+            icon: vaultwarden.png
+            siteMonitor: https://vaultwarden.bijouxlabs.cc
 
     - Infrastructure:
         - Traefik:
-            href: https://traefik.bijouxlabs.cc/dashboard/
+            href: https://traefik.bijouxlabs.cc/ping
             description: Reverse proxy
             icon: traefik.png
-            siteMonitor: https://traefik.bijouxlabs.cc/dashboard/
+            siteMonitor: https://traefik.bijouxlabs.cc/ping
         - Uptime Kuma:
             href: https://uptime.bijouxlabs.cc
             description: Uptime monitoring
@@ -65,6 +77,11 @@ data:
             description: Cluster metrics & dashboards
             icon: grafana.png
             siteMonitor: https://grafana.bijouxlabs.cc
+        - NetBox:
+            href: https://netbox.bijouxlabs.cc
+            description: Network documentation & IPAM
+            icon: netbox.png
+            siteMonitor: https://netbox.bijouxlabs.cc
 
     - Automation:
         - n8n:
@@ -72,11 +89,11 @@ data:
             description: Self-hosted n8n
             icon: n8n.png
             siteMonitor: https://n8n.bijouxlabs.cc
-        - Opengist:
-            href: https://opengist.bijouxlabs.cc
-            description: Self-hosted Gist
-            icon: si-github
-            siteMonitor: https://opengist.bijouxlabs.cc
+        - Home Assistant:
+            href: https://homeassistant.bijouxlabs.cc
+            description: Self-hosted Home Assistant
+            icon: home-assistant.png
+            siteMonitor: https://homeassistant.bijouxlabs.cc
 
     - Proxmox:
         - Proxmox:
@@ -112,5 +129,4 @@ data:
 
   kubernetes.yaml: |
     mode: cluster
-
   docker.yaml: |

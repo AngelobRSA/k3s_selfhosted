@@ -6,15 +6,14 @@ A 12-node k3s cluster running on Proxmox, managed entirely through Flux CD. This
 
 ## Background
 
-I spent years in a senior SP networking role: MPLS, BGP, the whole vendor-locked stack. The labs were real but they always felt incomplete: spin up some VMs, paste a config, send a few test packets, call it done. The gaps you don't close by stopping there are significant.
+I spent years in a senior SP networking role: MPLS, BGP, the whole vendor-locked stack. I learn best by doing and while there were plenty of options (Packet tracer, GNS3, Hardware labs) My experience was roughly the same: spend ages rewriting boilerplate configs, reading vendor docs and pasting configs.Once that was done and the routes were learned or pings returned, that was kind of the end of meaningful work on the lab.The gaps you don't close by stopping there are significant. You had an idea of how to implement a feature and some approximation of what production would look like but it felt inert and unresponsive. 
 
-When I moved almost exclusively into Linux, the contrast was stark. Coming from an environment where adding functionality meant opening a TAC case, suddenly a single command could extend or replace entire subsystems. That shift changed how I thought about infrastructure.
+When I moved almost exclusively into Linux, Scripting & Systems work I had to learn a lot of new tools and techniques. Many of which would be the the same upsteam systems that integrated into the network infrastructure.
 
-The self-hosting journey ran parallel to that. A Pi doing DNS ad-blocking and a few containers quickly hit resource limits (and in 2015, finding ARM-compatible images for anything was its own adventure). A mini PC fixed the resources. Home Assistant wired to a handful of IoT sensors was a genuine turning point, the first time the lab felt like it was actually doing something.
+The self-hosting journey ran parallel to that. A Pi doing DNS ad-blocking and a few containers quickly hit resource limits (and in 2015, finding ARM-compatible images for anything was its own adventure). A cheap mini PC from amazon to add resources also added many new variables to account for. Home Assistant wired to a handful of IoT sensors was a genuine turning point, the first time the lab felt like it was actually doing something.
 
-Fast forward: containers spread across two mini PCs managed by Portainer. It worked until it didn't. Entropy crept in quietly: which VM should this container live on, how much RAM does it get, and at some point you're just keeping a mental map of every socket in the stack.
+Fast forward: containers spread across two mini PCs & Entropy quietly crept in: logins, OS versions, config directories & daemons to remember. It worked until it didn't. Portainer helped manage some of that complexity for a while. I learned of kubernetes and was immediately intimidated. I tried the books and online tutorials but it was difficult to map that understanding to a context that I was familiar with. Slowly the decision to use my own lab to learn kubernetes became clear.
 
-The only way to actually understand Kubernetes was to stop reading about it.
 
 ---
 
@@ -61,11 +60,15 @@ Proxmox Hypervisor
 | App | Description |
 |---|---|
 | [Immich](https://immich.app) | Self-hosted photo library, CNPG cluster with VectorChord for ML embeddings |
+| [Vaultwarden](https://github.com/dani-garcia/vaultwarden) | Self-hosted Bitwarden-compatible password manager |
+| [NetBox](https://netbox.dev) | Network documentation and IPAM |
+| [Home Assistant](https://www.home-assistant.io) | IoT and home automation |
 | [n8n](https://n8n.io) | Workflow automation |
-| [Home Assistant](https://www.home-assistant.io) | IoT and home automation (in progress) |
 | [Homepage](https://gethomepage.dev) | Unified service dashboard |
-| [Uptime Kuma](https://github.com/louislam/uptime-kuma) | Service monitoring |
-| [Opengist](https://github.com/nicholaswilde/opengist) | Self-hosted gist service |
+| [Uptime Kuma](https://github.com/louislam/uptime-kuma) | Service uptime monitoring |
+| [Opengist](https://github.com/thomiceli/opengist) | Self-hosted gist service |
+| [Copyparty](https://github.com/9001/copyparty) | Self-hosted file sharing |
+| [Grafana + Prometheus](https://grafana.com) | Cluster metrics and dashboards (kube-prometheus-stack) |
 | iperf3 | Network performance testing endpoint |
 
 ---
@@ -119,7 +122,9 @@ Flux decrypts secrets at apply time via the `kustomize-controller` SOPS provider
 
 ## Roadmap
 
-- Home Assistant (manifests exist, not yet wired into `apps/kustomization.yaml`)
-- CrowdSec agent on OpenWrt router for IoT egress monitoring
-- Cloudflare Tunnel for n8n public webhook exposure
-- Upgrade Immich OCIRepository from deprecated `v1beta2` to `v1`
+- VyOS VM on Proxmox to replace OpenWrt router (dual NIC: WAN→ONT, LAN→switch)
+- IoT VLAN (VLAN 20) for smart devices, HPE managed switch already in place
+- WiFi 6 APs with 802.11r/k/v roaming to replace mixed ZTE/Huawei setup
+- Tailscale subnet router for mobile access over tailnet
+- Cloudflare Tunnel (`cloudflared` pod) for n8n public webhook exposure
+- CrowdSec agent on VyOS for IoT egress monitoring
