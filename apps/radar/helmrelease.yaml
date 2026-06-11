@@ -41,7 +41,7 @@ spec:
 
     rbac:
       podExec: false
-      portForward: false
+      portForward: true
       secrets: false
       helm: false
 
