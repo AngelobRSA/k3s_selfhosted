@@ -33,6 +33,22 @@ spec:
       storageClass: longhorn-single
       size: 5Gi
 
+    ingress:
+      enabled: true
+      className: traefik
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.tls: "true"
+        traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+      hosts:
+        - host: ollama.bijouxlabs.cc
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - hosts:
+            - ollama.bijouxlabs.cc
+
     resources:
       requests:
         cpu: 100m
