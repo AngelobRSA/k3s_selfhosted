@@ -27,11 +27,6 @@ spec:
     ollama:
       gpu:
         enabled: false
-      models:
-        pull:
-          - nomic-embed-text
-        run:
-          - nomic-embed-text
 
     persistentVolume:
       enabled: true
