@@ -1,0 +1,46 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: ollama
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://otwld.github.io/ollama-helm/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ollama
+  namespace: ollama
+spec:
+  releaseName: ollama
+  chart:
+    spec:
+      chart: ollama
+      sourceRef:
+        kind: HelmRepository
+        name: ollama
+        namespace: flux-system
+  interval: 30m
+  timeout: 10m
+  values:
+    ollama:
+      gpu:
+        enabled: false
+      models:
+        pull:
+          - nomic-embed-text
+        run:
+          - nomic-embed-text
+
+    persistentVolume:
+      enabled: true
+      storageClass: longhorn-single
+      size: 5Gi
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        memory: 4Gi

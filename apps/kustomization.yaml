@@ -13,3 +13,4 @@ resources:
   - radar
   - paperless
   - qdrant
+  - ollama

@@ -70,6 +70,7 @@ Proxmox Hypervisor
 | [Copyparty](https://github.com/9001/copyparty) | Self-hosted file sharing |
 | [Radar](https://github.com/skyhook-io/radar) | Kubernetes cluster visibility — workloads, traffic (via Hubble), events |
 | [Qdrant](https://qdrant.tech) | Vector database for semantic search and RAG |
+| [Ollama](https://ollama.com) | Local LLM inference server running `nomic-embed-text` for embeddings |
 | [Grafana + Prometheus](https://grafana.com) | Cluster metrics and dashboards (kube-prometheus-stack) |
 | iperf3 | Network performance testing endpoint |
 
