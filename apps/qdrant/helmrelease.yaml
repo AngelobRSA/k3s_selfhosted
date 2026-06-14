@@ -1,0 +1,63 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: qdrant
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://qdrant.github.io/qdrant-helm
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: qdrant
+  namespace: qdrant
+spec:
+  releaseName: qdrant
+  chart:
+    spec:
+      chart: qdrant
+      sourceRef:
+        kind: HelmRepository
+        name: qdrant
+        namespace: flux-system
+  interval: 30m
+  values:
+    replicaCount: 1
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 1Gi
+
+    persistence:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: longhorn
+      size: 10Gi
+
+    config:
+      service:
+        api_key:
+          valueFrom:
+            secretKeyRef:
+              name: qdrant-secret
+              key: api-key
+
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.tls: "true"
+        traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+      hosts:
+        - host: qdrant.bijouxlabs.cc
+          paths:
+            - path: /
+              pathType: Prefix
+              servicePort: 6333
+      tls:
+        - hosts:
+            - qdrant.bijouxlabs.cc

@@ -12,3 +12,4 @@ resources:
   - vaultwarden
   - radar
   - paperless
+  - qdrant

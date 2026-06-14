@@ -48,7 +48,7 @@ Proxmox Hypervisor
 | Load Balancer | MetalLB (L2) |
 | Control Plane HA | kube-vip |
 | Storage | Longhorn |
-| CNI | Cilium |
+| CNI | Cilium + Hubble |
 | Database operator | CloudNative-PG |
 | Secrets | SOPS + age |
 | Intrusion detection | CrowdSec + ForwardAuth bouncer |
@@ -61,13 +61,15 @@ Proxmox Hypervisor
 |---|---|
 | [Immich](https://immich.app) | Self-hosted photo library, CNPG cluster with VectorChord for ML embeddings |
 | [Vaultwarden](https://github.com/dani-garcia/vaultwarden) | Self-hosted Bitwarden-compatible password manager |
-| [NetBox](https://netbox.dev) | Network documentation and IPAM |
+| [Paperless-ngx](https://docs.paperless-ngx.com) | Document management with OCR; sidecars: Valkey (Redis), Apache Tika, Gotenberg |
 | [Home Assistant](https://www.home-assistant.io) | IoT and home automation |
 | [n8n](https://n8n.io) | Workflow automation |
 | [Homepage](https://gethomepage.dev) | Unified service dashboard |
 | [Uptime Kuma](https://github.com/louislam/uptime-kuma) | Service uptime monitoring |
 | [Opengist](https://github.com/thomiceli/opengist) | Self-hosted gist service |
 | [Copyparty](https://github.com/9001/copyparty) | Self-hosted file sharing |
+| [Radar](https://github.com/skyhook-io/radar) | Kubernetes cluster visibility — workloads, traffic (via Hubble), events |
+| [Qdrant](https://qdrant.tech) | Vector database for semantic search and RAG |
 | [Grafana + Prometheus](https://grafana.com) | Cluster metrics and dashboards (kube-prometheus-stack) |
 | iperf3 | Network performance testing endpoint |
 
@@ -84,8 +86,8 @@ Proxmox Hypervisor
 │   ├── longhorn/       # Distributed storage + StorageClass
 │   ├── kube-vip/       # Control plane VIP DaemonSet
 │   ├── cnpg/           # CloudNative-PG operator
-│   ├── cilium/         # CNI
-│   └── bijouxlabs/     # Cluster-wide middleware + Proxmox node resources
+│   ├── cilium/         # CNI + Hubble relay/UI
+│   └── bijouxlabs/     # Proxmox node reverse-proxy (headless Services + Endpoints + Ingresses per host)
 └── apps/
     └── <app>/          # Per-app Kustomization, HelmRelease, SOPS secrets
 ```
