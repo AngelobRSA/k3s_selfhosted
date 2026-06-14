@@ -34,7 +34,7 @@ spec:
 
     persistence:
       accessModes: ["ReadWriteOnce"]
-      storageClassName: longhorn
+      storageClassName: longhorn-single
       size: 10Gi
 
     config:
