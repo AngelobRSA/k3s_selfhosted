@@ -37,13 +37,12 @@ spec:
       storageClassName: longhorn-single
       size: 10Gi
 
-    config:
-      service:
-        api_key:
-          valueFrom:
-            secretKeyRef:
-              name: qdrant-secret
-              key: api-key
+    extraEnv:
+      - name: QDRANT__SERVICE__API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: qdrant-secret
+            key: api-key
 
     ingress:
       enabled: true
