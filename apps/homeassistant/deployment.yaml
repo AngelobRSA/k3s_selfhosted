@@ -19,7 +19,7 @@ spec:
         kubernetes.io/hostname: kworker01
       containers:
         - name: homeassistant
-          image: homeassistant/home-assistant:2026.5.4
+          image: homeassistant/home-assistant:2026.6.3
           ports:
             - containerPort: 8123
           env:
