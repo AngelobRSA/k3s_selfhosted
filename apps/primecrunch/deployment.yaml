@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: primecrunch
+  namespace: primecrunch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: primecrunch
+  template:
+    metadata:
+      labels:
+        app: primecrunch
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: crunch
+          image: ghcr.io/angelobrsa/primecrunch:3.3.7
+          args:
+            - "-u=false"
+            - "-p"
+            - "2"
+          env:
+            - name: CRUNCH_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: primecrunch-credentials
+                  key: email
+            - name: CRUNCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: primecrunch-credentials
+                  key: password
+            - name: CRUNCH_CHANNEL
+              value: stable
+            - name: CRUNCH_DIR
+              value: /data
+            - name: NAME_PREFIX
+              value: k8s
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: "2"
+              memory: 256Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}
