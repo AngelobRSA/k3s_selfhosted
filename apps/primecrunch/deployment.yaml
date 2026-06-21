@@ -21,6 +21,8 @@ spec:
       containers:
         - name: crunch
           image: ghcr.io/angelobrsa/primecrunch-docker:3.3.7
+          securityContext:
+            allowPrivilegeEscalation: false
           args:
             - "-u=false"
             - "-p"

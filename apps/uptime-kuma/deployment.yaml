@@ -18,6 +18,8 @@ spec:
       containers:
         - name: uptime-kuma
           image: louislam/uptime-kuma:2.4.0
+          securityContext:
+            allowPrivilegeEscalation: false
           ports:
             - containerPort: 3001
           volumeMounts:

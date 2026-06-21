@@ -22,6 +22,8 @@ spec:
       containers:
         - name: copyparty
           image: copyparty/ac:latest
+          securityContext:
+            allowPrivilegeEscalation: false
           ports:
             - containerPort: 3923
           args:
