@@ -48,7 +48,7 @@ spec:
                   fieldPath: metadata.name
           resources:
             requests:
-              cpu: "2"
+              cpu: "1"
               memory: 256Mi
           volumeMounts:
             - name: data
