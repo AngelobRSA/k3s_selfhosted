@@ -27,7 +27,7 @@ spec:
           ports:
             - containerPort: 3923
           args:
-            - "--cfg"
+            - "-c"
             - "/cfg/copyparty.conf"
             - "-v"
             - "/w::rw"
