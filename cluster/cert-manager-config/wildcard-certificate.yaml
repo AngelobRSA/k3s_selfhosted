@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: bijouxlabs-wildcard
+  namespace: traefik
+spec:
+  secretName: bijouxlabs-wildcard-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: "*.bijouxlabs.cc"
+  dnsNames:
+    - "bijouxlabs.cc"
+    - "*.bijouxlabs.cc"
+  duration: 2160h
+  renewBefore: 360h
