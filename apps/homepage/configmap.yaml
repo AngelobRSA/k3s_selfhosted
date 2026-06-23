@@ -21,6 +21,8 @@ data:
           memory: true
           showLabel: true
           label: k3s
+        nodes:
+          show: false
     - datetime:
         text_size: xl
         format:
