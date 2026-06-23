@@ -31,6 +31,15 @@ spec:
       externalTrafficPolicy: Local
     deployment:
       replicas: 2
+    tolerations:
+      - key: node.kubernetes.io/not-ready
+        operator: Exists
+        effect: NoExecute
+        tolerationSeconds: 60
+      - key: node.kubernetes.io/unreachable
+        operator: Exists
+        effect: NoExecute
+        tolerationSeconds: 60
     affinity:
       podAntiAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
