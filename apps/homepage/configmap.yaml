@@ -31,7 +31,7 @@ data:
           hourCycle: h23
     - search:
         provider: duckduckgo
-        target: _blank
+        target: https://www.duckduckgo.com
 
   services.yaml: |
     - Media:
@@ -40,17 +40,27 @@ data:
             description: Photo management & facial recognition
             icon: immich.png
             siteMonitor: https://photos.bijouxlabs.cc
-    - File Management:
+    - Data Management:
         - Opengist:
             href: https://opengist.bijouxlabs.cc
-            description: Self-hosted gist service
+            description: Notes & Gists
             icon: opengist.png
             siteMonitor: https://opengist.bijouxlabs.cc
         - Copyparty:
             href: https://files.bijouxlabs.cc
-            description: Self-hosted file sharing
+            description: Fileshare
             icon: copyparty.png
             siteMonitor: https://files.bijouxlabs.cc
+        - PaperlessNGX:
+            href: https://paperless.bijouxlabs.cc
+            description: Document store
+            icon: paperless.png
+            siteMonitor: https://paperless.bijouxlabs.cc
+        - Qdrant:
+            href: https://qdrant.bijouxlabs.cc/dashboard
+            description: Self-hosted VectorDB
+            icon: qdrant.png
+            siteMonitor: https://qdrant.bijouxlabs.cc/dashboard
     - Web Tools:
         - Vaultwarden:
             href: https://vaultwarden.bijouxlabs.cc
@@ -79,11 +89,6 @@ data:
             description: Cluster metrics & dashboards
             icon: grafana.png
             siteMonitor: https://grafana.bijouxlabs.cc
-        - NetBox:
-            href: https://netbox.bijouxlabs.cc
-            description: Network documentation & IPAM
-            icon: netbox.png
-            siteMonitor: https://netbox.bijouxlabs.cc
 
     - Automation:
         - n8n:
