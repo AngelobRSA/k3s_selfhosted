@@ -49,6 +49,9 @@ spec:
         - hosts:
             - ollama.bijouxlabs.cc
 
+    nodeSelector:
+      kubernetes.io/hostname: kworker01
+
     resources:
       requests:
         cpu: 100m
