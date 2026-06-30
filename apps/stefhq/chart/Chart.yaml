@@ -1,0 +1,6 @@
+apiVersion: v2
+name: stefhq
+description: StefHQ personal AI system — FastAPI backend, SvelteKit frontend, ARQ worker, pgvector, Redis
+type: application
+version: 0.1.0
+appVersion: "latest"

@@ -1,0 +1,54 @@
+backend:
+  image:
+    repository: ghcr.io/slbij/stefhq-backend
+    tag: latest
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+worker:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+frontend:
+  image:
+    repository: ghcr.io/slbij/stefhq-frontend
+    tag: latest
+  replicaCount: 1
+  origin: https://stefhq.io
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+postgres:
+  storage: 10Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+redis:
+  storage: 1Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+ollama:
+  url: http://ollama.ollama.svc.cluster.local:11434

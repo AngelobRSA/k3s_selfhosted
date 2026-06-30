@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stefhq-postgres-init
+  namespace: {{ .Release.Namespace }}
+data:
+  init.sql: |
+    CREATE EXTENSION IF NOT EXISTS vector;
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: stefhq-postgres-data
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    volume.longhorn.io/number-of-replicas: "2"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: {{ .Values.postgres.storage }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: pgvector/pgvector:pg16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: stefhq
+            - name: POSTGRES_DB
+              value: stefhq
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: stefhq-secret
+                  key: POSTGRES_PASSWORD
+          resources: {{ toYaml .Values.postgres.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+              subPath: pgdata
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: stefhq-postgres-data
+        - name: init
+          configMap:
+            name: stefhq-postgres-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

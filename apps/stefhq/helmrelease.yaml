@@ -1,0 +1,16 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: stefhq
+  namespace: stefhq
+spec:
+  interval: 10m
+  chart:
+    spec:
+      chart: apps/stefhq/chart
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+  targetNamespace: stefhq
+  values: {}
