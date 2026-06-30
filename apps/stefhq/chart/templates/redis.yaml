@@ -28,16 +28,6 @@ spec:
       labels:
         app: redis
     spec:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - kmaster01
-                      - kmaster02
       containers:
         - name: redis
           image: redis:7-alpine
