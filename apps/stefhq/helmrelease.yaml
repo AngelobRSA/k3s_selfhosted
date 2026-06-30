@@ -13,4 +13,11 @@ spec:
         name: flux-system
         namespace: flux-system
   targetNamespace: stefhq
+  timeout: 15m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
   values: {}
