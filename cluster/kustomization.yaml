@@ -12,6 +12,7 @@ resources:
   - metallb
   - cilium
   - traefik
+  - cloudflared
   - longhorn
   - cnpg
   - replacements.sops.yaml
