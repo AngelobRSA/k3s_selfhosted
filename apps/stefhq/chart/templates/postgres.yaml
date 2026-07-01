@@ -12,12 +12,10 @@ kind: PersistentVolumeClaim
 metadata:
   name: stefhq-postgres-data
   namespace: {{ .Release.Namespace }}
-  annotations:
-    volume.longhorn.io/number-of-replicas: "2"
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: longhorn
+  storageClassName: longhorn-nvme
   resources:
     requests:
       storage: {{ .Values.postgres.storage }}
