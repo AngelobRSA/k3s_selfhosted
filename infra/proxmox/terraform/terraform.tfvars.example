@@ -1,0 +1,12 @@
+# Copy to terraform.tfvars (gitignored) and fill in, OR pass via env:
+#   export TF_VAR_pve_api_token='terraform@pve!tf=xxxxxxxx-....'
+#   sops exec-env secrets.enc.env 'terraform apply'   # provides TF_VAR_k3s_token
+
+pve_endpoint  = "https://192.168.0.211:8006/"
+pve_api_token = "terraform@pve!tf=REPLACE-WITH-UUID"
+
+# k3s_token: DO NOT put here. Supply via SOPS/env (see variables.tf).
+# k3s_token = "..."
+
+# masters map has working defaults in variables.tf (kmaster04 / kmaster05).
+# Override only if you change placement, IPs, or sizing.

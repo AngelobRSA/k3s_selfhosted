@@ -1,0 +1,55 @@
+#cloud-config
+# Rendered per-master by Terraform (templatefile) and uploaded as a Proxmox
+# snippet, then attached via initialization.user_data_file_id.
+# Variables: hostname, k3s_token
+hostname: ${hostname}
+preserve_hostname: false
+
+# Terraform's user_data overrides Proxmox's auto-generated user section, so the
+# login user + SSH key must be declared here (not just on the template).
+users:
+  - name: angelo
+    groups: [wheel]
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ${ssh_authorized_key}
+
+package_update: true
+packages:
+  - qemu-guest-agent
+  - curl
+
+runcmd:
+  # Force the hostname — the Rocky cloud image ignores cloud-config `hostname:`
+  # and Proxmox's meta-data has no local-hostname, so it stays "localhost".
+  - hostnamectl set-hostname ${hostname}
+  # The Rocky GenericCloud image is minimal and lacks kernel-modules-extra, so
+  # netfilter modules (iptable_raw, xt_CT, xt_mark...) are missing and Cilium
+  # crashloops installing its datapath iptables rules. Install + load + persist.
+  - dnf install -y "kernel-modules-extra-$(uname -r)"
+  - modprobe iptable_raw iptable_nat iptable_mangle iptable_filter xt_CT xt_mark xt_comment
+  - printf 'iptable_raw\niptable_nat\niptable_mangle\niptable_filter\nxt_CT\nxt_mark\nxt_comment\n' > /etc/modules-load.d/cilium.conf
+  # guest agent so Terraform/bpg can read the VM's IP and settle the clone
+  - systemctl enable --now qemu-guest-agent
+  # Join the existing HA cluster as an additional control-plane (server) node.
+  # - version pinned to match the running cluster exactly
+  # - joins through the kube-vip VIP (no dependency on any single master)
+  # - explicit --node-name → deterministic, unique etcd member name
+  #   (OS hostname is unreliable; without this it collides with kmaster01's
+  #    own "localhost" etcd member → "duplicate node name")
+  # - flannel off (Cilium CNI); NO --disable-network-policy (masters keep it on)
+  # - taints itself to match the existing (tainted, workload-free) masters
+  - |
+    curl -sfL https://get.k3s.io | \
+      INSTALL_K3S_VERSION="v1.33.5+k3s1" \
+      K3S_TOKEN="${k3s_token}" \
+      sh -s - server \
+        --server "https://192.168.0.220:6443" \
+        --node-name "${hostname}" \
+        --flannel-backend=none \
+        --disable=servicelb \
+        --disable=traefik \
+        --disable=local-storage \
+        --node-taint "node-role.kubernetes.io/control-plane=true:NoSchedule" \
+        --tls-san "192.168.0.220"
