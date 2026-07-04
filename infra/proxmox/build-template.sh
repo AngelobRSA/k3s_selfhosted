@@ -26,11 +26,16 @@ IMG_PATH="/var/lib/vz/template/iso/$(basename "$IMG_URL")"
 
 echo ">> [$(hostname)] building template $TEMPLATE_VMID ($TEMPLATE_NAME) on $STORAGE"
 
-# Fetch the cloud image once (cached).
-if [[ ! -f "$IMG_PATH" ]]; then
-  echo ">> downloading Rocky 10 GenericCloud image"
-  mkdir -p "$(dirname "$IMG_PATH")"
-  curl -fL --retry 3 -o "$IMG_PATH" "$IMG_URL"
+# Fetch the cloud image once (cached). Verify size against the server and
+# resume (-C -) if missing or incomplete, so a truncated download can't produce
+# a corrupt template.
+mkdir -p "$(dirname "$IMG_PATH")"
+remote_size="$(curl -fsSLI "$IMG_URL" | awk 'tolower($1)=="content-length:"{print $2}' | tr -d '\r')"
+local_size="$(stat -c%s "$IMG_PATH" 2>/dev/null || echo 0)"
+if [[ ! -f "$IMG_PATH" || "$local_size" != "$remote_size" ]]; then
+  echo ">> downloading Rocky 10 GenericCloud image (have ${local_size}B / ${remote_size}B, resuming)"
+  curl -fL --retry 5 --retry-delay 3 -C - -o "$IMG_PATH" "$IMG_URL"
+  [[ "$(stat -c%s "$IMG_PATH")" == "$remote_size" ]] || { echo "!! download still incomplete"; exit 1; }
 fi
 
 # Rebuild cleanly if it already exists.
