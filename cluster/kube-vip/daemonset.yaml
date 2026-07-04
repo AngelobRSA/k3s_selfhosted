@@ -32,7 +32,10 @@ spec:
             - --arp
             - --controlplane
             - --leaderElection
-            - --interface=ens18
+            # --interface omitted on purpose: kube-vip auto-detects the global-scope
+            # NIC per node, so this works on both the legacy ens18 masters and the
+            # Rocky-cloud-image (eth0) masters with no per-node config. Every master
+            # is single-NIC, so detection is unambiguous.
             - --vip=192.168.0.220
             - --vipSubnet=32
           env:
