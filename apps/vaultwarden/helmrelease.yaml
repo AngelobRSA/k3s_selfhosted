@@ -30,7 +30,7 @@ spec:
     domain: "https://vaultwarden.bijouxlabs.cc"
 
     image:
-      tag: "1.34.1"
+      tag: "1.36.0"
 
     adminToken:
       existingSecret: vaultwarden-secret
