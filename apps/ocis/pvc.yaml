@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ocis-data
+  namespace: ocis
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-nvme
+  resources:
+    requests:
+      storage: 50Gi

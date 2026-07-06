@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ocis
+  namespace: ocis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ocis
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: ocis
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+        # Runs once before the server. OCIS refuses to start without a config
+        # (ocis.yaml) holding its service secrets + admin password. `ocis init`
+        # generates that config. This MUST be idempotent: on pod restarts the
+        # config already exists on the PVC and must NOT be regenerated, or every
+        # restart would mint new secrets and lock you out of your own data.
+        - name: init
+          image: owncloud/ocis:8.0.5
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              if [ -f "/var/lib/ocis/config/ocis.yaml" ]; then
+                  exit 0
+              else
+                  ocis init --insecure false ||exit 1
+              fi
+          env:
+            - name: OCIS_CONFIG_DIR
+              value: /var/lib/ocis/config
+            - name: OCIS_INSECURE
+              value: "false"
+            # Sets the admin account password at `ocis init` time. Only takes
+            # effect on first boot (init is guarded); change it in the UI after.
+            - name: IDM_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ocis-admin
+                  key: admin-password
+          volumeMounts:
+            - mountPath: /var/lib/ocis
+              name: data
+      containers:
+        - name: ocis
+          image: owncloud/ocis:8.0.5
+          args: ["server"]
+          securityContext:
+            allowPrivilegeEscalation: false
+          ports:
+            - containerPort: 9200
+          env:
+            - name: OCIS_URL
+              value: https://drive.bijouxlabs.cc
+            - name: OCIS_LOG_LEVEL
+              value: info
+            - name: OCIS_INSECURE
+              value: "false"
+            - name: PROXY_TLS
+              value: "false"
+            - name: PROXY_HTTP_ADDR
+              value: 0.0.0.0:9200
+            - name: OCIS_CONFIG_DIR
+              value: /var/lib/ocis/config
+            - name: OCIS_BASE_DATA_PATH
+              value: /var/lib/ocis/data
+            - name: TZ
+              value: Africa/Johannesburg
+          volumeMounts:
+            - mountPath: /var/lib/ocis
+              name: data
+          readinessProbe:
+            tcpSocket:
+              port: 9200
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: ocis-data
