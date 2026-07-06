@@ -3,12 +3,10 @@ kind: PersistentVolumeClaim
 metadata:
   name: ocis-data
   namespace: ocis
-  annotations:
-    volume.longhorn.io/number-of-replicas: "2"
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: longhorn
+  storageClassName: longhorn-nvme
   resources:
     requests:
       storage: 50Gi

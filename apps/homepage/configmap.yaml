@@ -61,6 +61,12 @@ data:
             description: Self-hosted VectorDB
             icon: qdrant.png
             siteMonitor: https://qdrant.bijouxlabs.cc/dashboard
+        - OCIS:
+            href: https://drive.bijouxlabs.cc
+            description: Self-hosted drive & file sync
+            icon: owncloud.png
+            siteMonitor: https://drive.bijouxlabs.cc
+
     - Web Tools:
         - Vaultwarden:
             href: https://vaultwarden.bijouxlabs.cc

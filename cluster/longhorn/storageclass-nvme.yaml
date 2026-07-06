@@ -1,0 +1,18 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-nvme
+provisioner: driver.longhorn.io
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "2"
+  # Pin replicas to the dedicated NVMe disks (tagged `nvme`) on
+  # kmaster01/02/03 — the only nodes with large fast storage. Keeps replicas
+  # off the small worker OS disks entirely.
+  diskSelector: "nvme"
+  staleReplicaTimeout: "30"
+  dataLocality: "best-effort"
+  disableRevisionCounter: "true"
+  fsType: "ext4"

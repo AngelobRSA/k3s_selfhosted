@@ -70,6 +70,7 @@ Proxmox Hypervisor
 | [Uptime Kuma](https://github.com/louislam/uptime-kuma) | Service uptime monitoring |
 | [Opengist](https://github.com/thomiceli/opengist) | Self-hosted gist service |
 | [Copyparty](https://github.com/9001/copyparty) | Self-hosted file sharing |
+| [ownCloud Infinite Scale](https://owncloud.dev/ocis/) | Self-hosted Google Drive replacement; single-binary OCIS on NVMe-backed Longhorn |
 | [StefHQ](https://github.com/SLBij/stefhq) | Personal AI assistant — FastAPI + SvelteKit + ARQ worker + pgvector + Ollama |
 | [Radar](https://github.com/skyhook-io/radar) | Kubernetes cluster visibility — workloads, traffic (via Hubble), events |
 | [Qdrant](https://qdrant.tech) | Vector database for semantic search and RAG |
