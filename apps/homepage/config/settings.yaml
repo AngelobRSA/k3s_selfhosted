@@ -1,0 +1,7 @@
+title: Bijoux Labs
+theme: dark
+color: slate
+headerStyle: boxed
+cardBlur: sm
+hideVersion: true
+statusStyle: dot

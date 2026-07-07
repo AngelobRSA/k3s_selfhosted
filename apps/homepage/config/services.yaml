@@ -1,0 +1,113 @@
+- Files & Documents:
+    - Immich:
+        href: https://photos.bijouxlabs.cc
+        description: Photo management & facial recognition
+        icon: immich.png
+        siteMonitor: https://photos.bijouxlabs.cc
+    - OCIS:
+        href: https://drive.bijouxlabs.cc
+        description: Self-hosted drive & file sync
+        icon: owncloud.png
+        siteMonitor: https://drive.bijouxlabs.cc
+    - Copyparty:
+        href: https://files.bijouxlabs.cc
+        description: Fileshare
+        icon: copyparty.png
+        siteMonitor: https://files.bijouxlabs.cc
+    - PaperlessNGX:
+        href: https://paperless.bijouxlabs.cc
+        description: Document store
+        icon: paperless.png
+        siteMonitor: https://paperless.bijouxlabs.cc
+    - Opengist:
+        href: https://opengist.bijouxlabs.cc
+        description: Notes & Gists
+        icon: opengist.png
+        siteMonitor: https://opengist.bijouxlabs.cc
+    - Karakeep:
+        href: https://karakeep.bijouxlabs.cc
+        description: Bookmarks & read-later
+        icon: karakeep.png
+        siteMonitor: https://karakeep.bijouxlabs.cc
+
+- Apps & Productivity:
+    - Vaultwarden:
+        href: https://vaultwarden.bijouxlabs.cc
+        description: Self-hosted password manager
+        icon: vaultwarden.png
+        siteMonitor: https://vaultwarden.bijouxlabs.cc
+    - Ollama:
+        href: https://ollama.bijouxlabs.cc
+        description: Local LLM inference server
+        icon: ollama.png
+        siteMonitor: https://ollama.bijouxlabs.cc
+    - StefHQ:
+        href: https://stefhq.io
+        description: Stef's app (public)
+        icon: mdi-web
+        siteMonitor: https://stefhq.io
+
+- Home & Automation:
+    - Home Assistant:
+        href: https://homeassistant.bijouxlabs.cc
+        description: Smart-home automation
+        icon: home-assistant.png
+        siteMonitor: https://homeassistant.bijouxlabs.cc
+    - n8n:
+        href: https://n8n.bijouxlabs.cc
+        description: Workflow automation
+        icon: n8n.png
+        siteMonitor: https://n8n.bijouxlabs.cc
+
+- Infrastructure:
+    - Proxmox:
+        href: https://proxmox.bijouxlabs.cc
+        description: Hypervisor cluster
+        icon: proxmox.png
+        siteMonitor: https://proxmox.bijouxlabs.cc
+    - Longhorn:
+        href: http://192.168.0.168
+        description: Distributed block storage
+        icon: longhorn.png
+        siteMonitor: http://192.168.0.168
+    - Traefik:
+        href: https://traefik.bijouxlabs.cc/ping
+        description: Reverse proxy
+        icon: traefik.png
+        siteMonitor: https://traefik.bijouxlabs.cc/ping
+    - Grafana:
+        href: https://grafana.bijouxlabs.cc
+        description: Cluster metrics & dashboards
+        icon: grafana.png
+        siteMonitor: https://grafana.bijouxlabs.cc
+    - Uptime Kuma:
+        href: https://uptime.bijouxlabs.cc
+        description: Uptime monitoring
+        icon: uptime-kuma.png
+        siteMonitor: https://uptime.bijouxlabs.cc
+    - Qdrant:
+        href: https://qdrant.bijouxlabs.cc/dashboard
+        description: Self-hosted VectorDB
+        icon: qdrant.png
+        siteMonitor: https://qdrant.bijouxlabs.cc/dashboard
+    - Radar:
+        href: https://radar.bijouxlabs.cc
+        description: Kubernetes observability
+        icon: mdi-radar
+        siteMonitor: https://radar.bijouxlabs.cc
+    - node01m910:
+        href: https://node01m910.bijouxlabs.cc
+        description: Proxmox node 01
+        icon: proxmox.png
+    - node02m910:
+        href: https://node02m910.bijouxlabs.cc
+        description: Proxmox node 02
+        icon: proxmox.png
+    - node03m920:
+        href: https://node03m920.bijouxlabs.cc
+        description: Proxmox node 03
+        icon: proxmox.png
+    - node04g4800:
+        href: https://node04g4800.bijouxlabs.cc
+        description: Proxmox node 04
+        icon: proxmox.png

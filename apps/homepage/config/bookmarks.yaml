@@ -1,0 +1,7 @@
+- Cluster:
+    - GitHub Repo:
+        - href: https://github.com/AngelobRSA/k3s_selfhosted
+          icon: github.png
+    - Flux Dashboard:
+        - href: https://github.com/AngelobRSA/k3s_selfhosted/actions
+          icon: github-actions.png

@@ -1,0 +1,18 @@
+- kubernetes:
+    cluster:
+      show: true
+      cpu: true
+      memory: true
+      showLabel: true
+      label: k3s
+    nodes:
+      show: false
+- datetime:
+    text_size: xl
+    format:
+      dateStyle: long
+      timeStyle: short
+      hourCycle: h23
+- search:
+    provider: duckduckgo
+    target: https://www.duckduckgo.com

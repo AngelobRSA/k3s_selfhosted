@@ -14,9 +14,6 @@ spec:
     metadata:
       labels:
         app: homepage
-      annotations:
-        # Restart when config changes
-        configmap-hash: "homepage-config"
     spec:
       serviceAccountName: homepage
       containers:

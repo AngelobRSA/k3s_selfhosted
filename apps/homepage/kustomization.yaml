@@ -3,7 +3,20 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - rbac.yaml
-  - configmap.yaml
   - deployment.yaml
   - service.yaml
   - ingress.yaml
+
+# Generated with a content-hash suffix so any edit to these files
+# renames the ConfigMap, changes the Deployment's volume refs, and
+# triggers an automatic rollout (subPath mounts only refresh on restart).
+configMapGenerator:
+  - name: homepage-config
+    namespace: homepage
+    files:
+      - config/settings.yaml
+      - config/widgets.yaml
+      - config/services.yaml
+      - config/bookmarks.yaml
+      - config/kubernetes.yaml
+      - config/docker.yaml
