@@ -20,7 +20,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: crunch
-          image: ghcr.io/angelobrsa/primecrunch-docker:3.3.7
+          image: ghcr.io/angelobrsa/primecrunch-docker:3.3.12
           securityContext:
             allowPrivilegeEscalation: false
           args:

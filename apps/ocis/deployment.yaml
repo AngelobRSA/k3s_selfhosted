@@ -26,7 +26,7 @@ spec:
         # config already exists on the PVC and must NOT be regenerated, or every
         # restart would mint new secrets and lock you out of your own data.
         - name: init
-          image: owncloud/ocis:8.0.5
+          image: owncloud/ocis:8.1.0
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -52,7 +52,7 @@ spec:
               name: data
       containers:
         - name: ocis
-          image: owncloud/ocis:8.0.5
+          image: owncloud/ocis:8.1.0
           args: ["server"]
           securityContext:
             allowPrivilegeEscalation: false
