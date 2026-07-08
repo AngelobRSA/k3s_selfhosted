@@ -54,10 +54,26 @@ variable "masters" {
   }
 }
 
+# New workers: k3s agents (no control-plane, no Longhorn storage deps). Empty by
+# default — the existing hand-built workers are NOT managed here. Add an entry
+# only to have Terraform create a brand-new worker (build its template first).
+variable "workers" {
+  description = "New agent/worker nodes to create"
+  type = map(object({
+    node          = string
+    vmid          = number
+    template_vmid = number
+    ip            = string # CIDR, e.g. 192.168.0.40/24
+    memory        = number # MiB
+    cores         = number
+  }))
+  default = {}
+}
+
 variable "ssh_authorized_key" {
-  description = "Public key granted to the angelo user on new masters"
+  description = "Public key granted to the angelo user on new masters/workers"
   type        = string
-  default     = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEkBVQalthJY9Nlsd8TMwSxZbyLAkdj5laxPLz4I4BRG angelo.bijoux@rsaweb.net"
+  default     = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEkBVQalthJY9Nlsd8TMwSxZbyLAkdj5laxPLz4I4BRG angelo@laptop"
 }
 
 variable "gateway" {
@@ -68,4 +84,9 @@ variable "gateway" {
 variable "dns_server" {
   type    = string
   default = "192.168.0.1"
+}
+
+variable "k3s_url" {
+  type = string
+  default = "https://192.168.0.220:6443"
 }

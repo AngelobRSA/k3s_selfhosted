@@ -1,0 +1,48 @@
+#cloud-config
+# Rendered per-worker by Terraform (templatefile) and uploaded as a Proxmox
+# snippet, then attached via initialization.user_data_file_id.
+# Variables: hostname, k3s_token, ssh_authorized_key
+hostname: ${hostname}
+preserve_hostname: false
+
+# Terraform's user_data overrides Proxmox's auto-generated user section, so the
+# login user + SSH key must be declared here (not just on the template).
+users:
+  - name: angelo
+    groups: [wheel]
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ${ssh_authorized_key}
+
+package_update: true
+packages:
+  - qemu-guest-agent
+  - curl
+  - iscsi-initiator-utils   # workers ATTACH Longhorn volumes (pods run here) → need iscsiadm
+  # NOTE: no cryptsetup here — workers don't store Longhorn replicas (masters-only storage design)
+
+runcmd:
+  # Force the hostname — the Rocky cloud image ignores cloud-config `hostname:`
+  # and Proxmox's meta-data has no local-hostname, so it stays "localhost".
+  - hostnamectl set-hostname ${hostname}
+  # The Rocky GenericCloud image is minimal and lacks kernel-modules-extra, so
+  # netfilter modules (iptable_raw, xt_CT, xt_mark...) are missing and Cilium
+  # crashloops installing its datapath iptables rules. Install + load + persist.
+  - dnf install -y "kernel-modules-extra-$(uname -r)"
+  - modprobe iptable_raw iptable_nat iptable_mangle iptable_filter xt_CT xt_mark xt_comment
+  - printf 'iptable_raw\niptable_nat\niptable_mangle\niptable_filter\nxt_CT\nxt_mark\nxt_comment\n' > /etc/modules-load.d/cilium.conf
+  # guest agent so Terraform/bpg can read the VM's IP and settle the clone
+  - systemctl enable --now qemu-guest-agent
+  # Join the existing cluster as an AGENT (worker) node.
+  # Unlike the server template, a worker: joins via K3S_URL (not --server),
+  # carries NO control-plane taint, and drops the server-only flags
+  # (--flannel-backend, --disable, --tls-san). Setting K3S_URL alone flips the
+  # installer into agent mode; --node-name gives a deterministic identity.
+  - |
+    curl -sfL https://get.k3s.io | \
+        INSTALL_K3S_VERSION="v1.33.5+k3s1" \
+        K3S_TOKEN="${k3s_token}" \
+        K3S_URL="${k3s_url}" \
+        sh -s - agent \
+            --node-name "${hostname}"

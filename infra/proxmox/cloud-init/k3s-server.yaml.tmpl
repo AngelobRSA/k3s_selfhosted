@@ -20,6 +20,7 @@ packages:
   - qemu-guest-agent
   - curl
   - iscsi-initiator-utils   # Longhorn needs iscsiadm/open-iscsi or longhorn-manager crashloops
+  - cryptsetup              # Longhorn node check (RequiredPackages) — enables encrypted-volume support on storage nodes
 
 runcmd:
   # Force the hostname — the Rocky cloud image ignores cloud-config `hostname:`
@@ -31,6 +32,10 @@ runcmd:
   - dnf install -y "kernel-modules-extra-$(uname -r)"
   - modprobe iptable_raw iptable_nat iptable_mangle iptable_filter xt_CT xt_mark xt_comment
   - printf 'iptable_raw\niptable_nat\niptable_mangle\niptable_filter\nxt_CT\nxt_mark\nxt_comment\n' > /etc/modules-load.d/cilium.conf
+  # Longhorn needs dm_crypt loaded + persisted for the KernelModulesLoaded node check
+  # (storage nodes only — masters hold the NVMe replicas).
+  - modprobe dm_crypt
+  - printf 'dm_crypt\n' > /etc/modules-load.d/longhorn.conf
   # guest agent so Terraform/bpg can read the VM's IP and settle the clone
   - systemctl enable --now qemu-guest-agent
   # Join the existing HA cluster as an additional control-plane (server) node.
