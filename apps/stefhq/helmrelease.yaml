@@ -4,6 +4,7 @@ metadata:
   name: stefhq
   namespace: stefhq
 spec:
+  suspend: true
   interval: 10m
   chart:
     spec:
