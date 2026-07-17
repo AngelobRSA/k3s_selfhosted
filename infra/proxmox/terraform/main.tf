@@ -9,9 +9,9 @@ resource "proxmox_virtual_environment_file" "user_data" {
 
   source_raw {
     data = templatefile("${path.module}/../cloud-init/k3s-server.yaml.tmpl", {
-      hostname           = each.key
-      k3s_token          = var.k3s_token
-      ssh_authorized_key = var.ssh_authorized_key
+      hostname            = each.key
+      k3s_token           = var.k3s_token
+      ssh_authorized_keys = var.ssh_authorized_keys
     })
     file_name = "${each.key}-user-data.yaml"
   }
@@ -28,10 +28,10 @@ resource "proxmox_virtual_environment_file" "user_data_worker" {
 
   source_raw {
     data = templatefile("${path.module}/../cloud-init/k3s-agent.yaml.tmpl", {
-      hostname           = each.key
-      k3s_token          = var.k3s_token
-      k3s_url            = var.k3s_url
-      ssh_authorized_key = var.ssh_authorized_key
+      hostname            = each.key
+      k3s_token           = var.k3s_token
+      k3s_url             = var.k3s_url
+      ssh_authorized_keys = var.ssh_authorized_keys
     })
     file_name = "${each.key}-user-data.yaml"
   }

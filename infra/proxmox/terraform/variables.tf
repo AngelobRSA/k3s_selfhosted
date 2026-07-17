@@ -70,10 +70,13 @@ variable "workers" {
   default = {}
 }
 
-variable "ssh_authorized_key" {
-  description = "Public key granted to the angelo user on new masters/workers"
-  type        = string
-  default     = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEkBVQalthJY9Nlsd8TMwSxZbyLAkdj5laxPLz4I4BRG angelo@laptop"
+variable "ssh_authorized_keys" {
+  description = "Public keys granted to the angelo user on new masters/workers"
+  type        = list(string)
+  default = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEkBVQalthJY9Nlsd8TMwSxZbyLAkdj5laxPLz4I4BRG angelo@laptop",
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOZFcI0Nha8eU9/5GQj9Ph8aHTIN7cpc060ZxhrMNqvN angelo@desktop",
+  ]
 }
 
 variable "gateway" {
@@ -87,6 +90,6 @@ variable "dns_server" {
 }
 
 variable "k3s_url" {
-  type = string
+  type    = string
   default = "https://192.168.0.220:6443"
 }

@@ -1,7 +1,7 @@
 #cloud-config
 # Rendered per-worker by Terraform (templatefile) and uploaded as a Proxmox
 # snippet, then attached via initialization.user_data_file_id.
-# Variables: hostname, k3s_token, ssh_authorized_key
+# Variables: hostname, k3s_token, k3s_url, ssh_authorized_keys
 hostname: ${hostname}
 preserve_hostname: false
 
@@ -13,7 +13,9 @@ users:
     sudo: "ALL=(ALL) NOPASSWD:ALL"
     shell: /bin/bash
     ssh_authorized_keys:
-      - ${ssh_authorized_key}
+%{ for key in ssh_authorized_keys ~}
+      - ${key}
+%{ endfor ~}
 
 package_update: true
 packages:
