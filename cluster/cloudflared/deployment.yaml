@@ -4,7 +4,9 @@ metadata:
   name: cloudflared
   namespace: cloudflared
 spec:
-  replicas: 2
+  # Scaled to 0: the only consumer (stefhq) is not publicly cut over yet and is
+  # itself scaled to 0. Manifests kept in place for a fast re-enable at cutover.
+  replicas: 0
   selector:
     matchLabels:
       app: cloudflared
