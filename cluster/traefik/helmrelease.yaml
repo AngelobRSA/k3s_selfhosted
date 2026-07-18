@@ -28,9 +28,22 @@ spec:
       type: LoadBalancer
       annotations:
         metallb.universe.tf/loadBalancerIPs: "192.168.0.169"
-      externalTrafficPolicy: Local
+      spec:
+        # MUST live under service.spec — this chart passes service.spec through
+        # to the Service verbatim. Setting it as service.externalTrafficPolicy
+        # (one level up) is silently discarded by Helm, which is why this
+        # cluster ran Cluster policy while the config asked for Local.
+        #
+        # Local stops MetalLB announcing from nodes with no ready Traefik
+        # endpoint, which removes the cross-node hop and its masquerade. Under
+        # Cluster the real client IP was replaced by the announcing node's
+        # cilium_host address, so access logs and X-Forwarded-For were useless.
+        externalTrafficPolicy: Local
     deployment:
-      replicas: 2
+      # 3 replicas: under Local only nodes running a Traefik pod are eligible
+      # to announce 192.168.0.169, so replica count is now availability, not
+      # just capacity.
+      replicas: 3
     resources:
       requests:
         cpu: 10m
@@ -45,18 +58,18 @@ spec:
         operator: Exists
         effect: NoExecute
         tolerationSeconds: 60
-    affinity:
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                  - key: app.kubernetes.io/name
-                    operator: In
-                    values:
-                      - traefik
-              topologyKey: kubernetes.io/hostname
+    # Replaces the previous preferredDuringScheduling podAntiAffinity, which was
+    # only a soft hint — nothing stopped all replicas landing on one node. Under
+    # externalTrafficPolicy: Local that node would become the sole announcer AND
+    # the sole server for all ingress. DoNotSchedule makes the spread a hard
+    # guarantee, so there are always distinct eligible announcers.
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: traefik
     tlsStore:
       default:
         defaultCertificate:
