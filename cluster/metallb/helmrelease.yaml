@@ -1,0 +1,56 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: metallb
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://metallb.github.io/metallb
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: metallb
+  namespace: metallb-system
+spec:
+  # Adopts the pre-existing helm release installed out-of-band on 2025-10-05
+  releaseName: metallb
+  storageNamespace: metallb-system
+  targetNamespace: metallb-system
+  chart:
+    spec:
+      chart: metallb
+      version: "0.15.2"
+      sourceRef:
+        kind: HelmRepository
+        name: metallb
+        namespace: flux-system
+  interval: 30m
+  timeout: 10m
+  install:
+    # CRDs already exist and are owned by the 0.15.2 release. Never let Flux
+    # create or replace them: deleting ipaddresspools.metallb.io would cascade
+    # to lan-pool and instantly release 192.168.0.162/.168/.169 (opengist,
+    # longhorn UI, and traefik — i.e. all cluster ingress).
+    crds: Skip
+  upgrade:
+    crds: Skip
+  values:
+    speaker:
+      frr:
+        # Cluster is pure L2/ARP: zero BGPPeer, BGPAdvertisement, Community or
+        # BFDProfile resources exist. The FRR sidecars (frr, frr-metrics,
+        # reloader) served no purpose and were the main source of probe churn.
+        enabled: false
+      # Chart default is timeoutSeconds: 1, which flaps on loaded nodes and
+      # drove hundreds of restarts (kworker01 hit 246). Re-applied here as
+      # GitOps; the same fix applied via kubectl on 2026-06-30 was reverted.
+      livenessProbe:
+        timeoutSeconds: 5
+      readinessProbe:
+        timeoutSeconds: 5
+    controller:
+      livenessProbe:
+        timeoutSeconds: 5
+      readinessProbe:
+        timeoutSeconds: 5
