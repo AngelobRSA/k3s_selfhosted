@@ -4,7 +4,11 @@ metadata:
   name: immich-db
   namespace: immich
 spec:
-  instances: 1
+  # 2 instances = primary + hot standby. Required for graceful node drains:
+  # with instances=1 CNPG's minAvailable=1 PDB can never permit evicting the
+  # primary (no standby to promote), which deadlocks `kubectl drain` until it
+  # times out. With a standby, CNPG performs a switchover instead.
+  instances: 2
   imageName: ghcr.io/tensorchord/cloudnative-vectorchord:16-1.1.1
   postgresql:
     shared_preload_libraries:
