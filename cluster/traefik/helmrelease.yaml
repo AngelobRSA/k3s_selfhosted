@@ -63,10 +63,28 @@ spec:
     # externalTrafficPolicy: Local that node would become the sole announcer AND
     # the sole server for all ingress. DoNotSchedule makes the spread a hard
     # guarantee, so there are always distinct eligible announcers.
+    #
+    # Hostname spread alone is hypervisor-blind: 3 distinct nodes can still be
+    # kmaster03 + kworker06 + kworker08, all on node03m920. One host reboot and
+    # every announcer for 192.168.0.169 disappears at once.
+    #
     topologySpreadConstraints:
+      # Floor: hard guarantee of 3 distinct VMs. Kept even though the zone rule
+      # below is stronger in principle — an unlabelled node is invisible to a
+      # zone constraint, so this is what holds if a label ever goes missing.
       - maxSkew: 1
         topologyKey: kubernetes.io/hostname
         whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: traefik
+      # Ceiling: prefer 3 distinct Proxmox hosts. Soft on purpose — with 5
+      # zones and 3 replicas this is satisfiable in steady state, but during a
+      # two-host maintenance window there is zero slack, and DoNotSchedule
+      # would deadlock a rolling update precisely when announcers are scarcest.
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
         labelSelector:
           matchLabels:
             app.kubernetes.io/name: traefik

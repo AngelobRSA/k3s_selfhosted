@@ -1,0 +1,159 @@
+# Hypervisor-aware topology labels.
+#
+# Nothing in Kubernetes knows which *physical* Proxmox host a VM sits on.
+# Longhorn's anti-affinity and Traefik's spread constraints both key on
+# `kubernetes.io/hostname`, which is satisfied by 3 distinct VMs even when all
+# three share one hypervisor. That has already caused real exposure twice.
+#
+# These stubs stamp `topology.kubernetes.io/zone: <proxmox-host>` onto every
+# node. Longhorn reads the label off the k8s Node and mirrors it onto the
+# `nodes.longhorn.io` CR, so this one label drives both consumers.
+#
+# Zone == physical Proxmox host. Live mapping (with IPs) lives in the
+# gitignored `docs/runbooks/physical-topology.md`; regenerate with topomap.py.
+#
+# ⚠️ Every Node carries `prune: disabled`. Without it, deleting an entry from
+# this file would make Flux delete the *actual Node object* from the cluster.
+# `ssa: merge` keeps Flux from fighting the kubelet over fields it doesn't own.
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: kmaster01
+  labels:
+    topology.kubernetes.io/zone: node01m910
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: merge
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: kworker01
+  labels:
+    topology.kubernetes.io/zone: node01m910
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: merge
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: kmaster02
+  labels:
+    topology.kubernetes.io/zone: node02m910
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: merge
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: kworker02
+  labels:
+    topology.kubernetes.io/zone: node02m910
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: merge
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: kmaster03
+  labels:
+    topology.kubernetes.io/zone: node03m920
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: merge
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: kworker03
+  labels:
+    topology.kubernetes.io/zone: node03m920
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: merge
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: kworker06
+  labels:
+    topology.kubernetes.io/zone: node03m920
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: merge
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: kworker08
+  labels:
+    topology.kubernetes.io/zone: node03m920
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: merge
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: kmaster04
+  labels:
+    topology.kubernetes.io/zone: node04g4800
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: merge
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: kworker04
+  labels:
+    topology.kubernetes.io/zone: node04g4800
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: merge
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: kworker05
+  labels:
+    topology.kubernetes.io/zone: node04g4800
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: merge
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: kworker07
+  labels:
+    topology.kubernetes.io/zone: node04g4800
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: merge
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: kworker09
+  labels:
+    topology.kubernetes.io/zone: node04g4800
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: merge
+---
+# The standalone `proxmox` host (.110) — also runs vyosGateway, so losing this
+# zone takes LAN DNS/gateway with it. kmaster05 is etcd-only, no Longhorn disk.
+apiVersion: v1
+kind: Node
+metadata:
+  name: kmaster05
+  labels:
+    topology.kubernetes.io/zone: proxmox
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: merge

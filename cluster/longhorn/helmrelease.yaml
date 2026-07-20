@@ -27,7 +27,19 @@ spec:
     defaultSettings:
       defaultReplicaCount: "2"
       defaultDataLocality: best-effort
+      # Node-level: two replicas may never share a k8s node.
       replicaSoftAntiAffinity: false
+      # Hypervisor-level: two replicas may never share a Proxmox host either.
+      # Zones come from `topology.kubernetes.io/zone` (see cluster/topology/),
+      # which Longhorn mirrors onto the nodes.longhorn.io CR automatically.
+      #
+      # Safe to make this hard: every StorageClass here is 2 replicas (or 1),
+      # and the nvme-tagged disks live in 3 distinct zones — node01m910,
+      # node02m910, node03m920 — so there is one spare zone of slack.
+      # Consequence to know before maintenance: with 2 of those 3 hosts down, a
+      # rebuild will refuse to schedule rather than double up. Degraded and
+      # honest, instead of quietly co-located.
+      replicaZoneSoftAntiAffinity: false
       allowVolumeCreationWithDegradedAvailability: false
       disableRevisionCounter: "true"
       defaultLonghornStaticDataCompliance: false
