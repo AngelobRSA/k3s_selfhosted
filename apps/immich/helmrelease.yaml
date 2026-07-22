@@ -117,6 +117,9 @@ spec:
           size: 10Gi
       controllers:
         main:
+          pod:
+            nodeSelector:
+              kubernetes.io/hostname: kworker07
           containers:
             main:
               resources:
@@ -125,6 +128,3 @@ spec:
                   memory: 1Gi
                 limits:
                   memory: 3Gi
-      pod:
-        nodeSelector:
-          kubernetes.io/hostname: kworker07
