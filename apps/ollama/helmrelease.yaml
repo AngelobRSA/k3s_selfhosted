@@ -50,7 +50,7 @@ spec:
             - ollama.bijouxlabs.cc
 
     nodeSelector:
-      kubernetes.io/hostname: kworker01
+      kubernetes.io/hostname: kworker02
 
     resources:
       requests:

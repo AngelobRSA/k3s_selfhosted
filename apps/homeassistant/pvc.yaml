@@ -1,3 +1,9 @@
+# NOTE: the live Longhorn volume backing this PVC was bumped to 2 replicas
+# out-of-band (via a direct patch to the Longhorn Volume object, not tracked
+# by Flux) for data durability. storageClassName below still says
+# longhorn-single (numberOfReplicas: 1) because that class is shared by 8
+# other apps and only sets the default for newly-provisioned volumes — it
+# does not reflect this volume's actual live replica count.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

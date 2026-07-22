@@ -68,6 +68,14 @@ spec:
       persistence:
         data:
           type: emptyDir
+      controllers:
+        main:
+          containers:
+            main:
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
 
     # Immich server with Traefik ingress
     server:
@@ -88,8 +96,18 @@ spec:
           tls:
             - hosts:
                 - photos.bijouxlabs.cc
+      controllers:
+        main:
+          containers:
+            main:
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
 
     # Machine learning (facial recognition + smart search)
+    # Pinned off kworker01 (CPU-constrained, 2 vCPU cap, was contending with
+    # ollama for cycles) onto kworker07 (least-loaded worker in the cluster).
     machine-learning:
       enabled: true
       persistence:
@@ -97,3 +115,16 @@ spec:
           enabled: true
           type: emptyDir
           size: 10Gi
+      controllers:
+        main:
+          containers:
+            main:
+              resources:
+                requests:
+                  cpu: 500m
+                  memory: 1Gi
+                limits:
+                  memory: 3Gi
+      pod:
+        nodeSelector:
+          kubernetes.io/hostname: kworker07
