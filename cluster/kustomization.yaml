@@ -16,6 +16,7 @@ resources:
   - cloudflared
   - longhorn
   - cnpg
+  - goldilocks
   - replacements.sops.yaml
 
 # Centralized Replacements mapping ConfigMap values to manifest fields

@@ -1,0 +1,47 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: fairwinds-stable
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://charts.fairwinds.com/stable
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: goldilocks
+  namespace: goldilocks
+spec:
+  releaseName: goldilocks
+  chart:
+    spec:
+      chart: goldilocks
+      sourceRef:
+        kind: HelmRepository
+        name: fairwinds-stable
+        namespace: flux-system
+  interval: 30m
+  timeout: 10m
+  values:
+    # Installs VPA (recommender/updater/admission-controller) as a subchart.
+    # Every VPA object Goldilocks creates runs updateMode "Off" — recommend
+    # only, never evict/resize a running pod.
+    vpa:
+      enabled: true
+
+    dashboard:
+      ingress:
+        enabled: true
+        ingressClassName: traefik
+        annotations:
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.tls: "true"
+          traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+        hosts:
+          - host: goldilocks.bijouxlabs.cc
+            paths:
+              - path: /
+        tls:
+          - hosts:
+              - goldilocks.bijouxlabs.cc
