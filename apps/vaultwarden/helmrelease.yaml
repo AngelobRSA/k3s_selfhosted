@@ -32,6 +32,13 @@ spec:
     image:
       tag: "1.36.0"
 
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
+
     adminToken:
       existingSecret: vaultwarden-secret
       existingSecretKey: admin-token

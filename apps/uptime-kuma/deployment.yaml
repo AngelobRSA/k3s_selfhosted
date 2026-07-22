@@ -22,6 +22,12 @@ spec:
             allowPrivilegeEscalation: false
           ports:
             - containerPort: 3001
+          resources:
+            requests:
+              cpu: 25m
+              memory: 256Mi
+            limits:
+              memory: 384Mi
           volumeMounts:
             - name: data
               mountPath: /app/data
