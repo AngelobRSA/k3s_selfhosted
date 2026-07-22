@@ -42,7 +42,7 @@ spec:
           - host: goldilocks.bijouxlabs.cc
             paths:
               - path: /
-                pathType: Prefix
+                type: Prefix
         tls:
           - hosts:
               - goldilocks.bijouxlabs.cc
