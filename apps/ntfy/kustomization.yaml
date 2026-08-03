@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ntfy
+resources:
+  - namespace.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+
+# Hash-suffixed ConfigMap so edits to server.yml actually roll the pod.
+# See reference_homepage_configmap_rollout: a subPath mount plus a static
+# annotation means config changes never apply.
+configMapGenerator:
+  - name: ntfy-config
+    files:
+      - server.yml=files/server.yml
+
+generatorOptions:
+  disableNameSuffixHash: false

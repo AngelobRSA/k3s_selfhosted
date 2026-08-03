@@ -1,0 +1,235 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: bijouxlabs-hardware
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    # ------------------------------------------------------------------
+    # Physical hosts (Proxmox). These fire on the hypervisors themselves,
+    # which is what the 2026-07-27 node04 outage needed and did not have.
+    # ------------------------------------------------------------------
+    - name: bijouxlabs.host
+      rules:
+        - alert: ProxmoxHostDown
+          expr: up{job="proxmox-node-exporter"} == 0
+          for: 5m
+          labels:
+            severity: critical
+            component: host
+          annotations:
+            summary: "Proxmox host {{ $labels.nodename }} is unreachable"
+            description: >-
+              node-exporter on {{ $labels.nodename }} ({{ $labels.instance }}) has
+              been unreachable for 5m. Every VM on this host is down. Check
+              physical power/NIC. Runbook: docs/runbooks/node04-triage.md
+
+        # This is the rule that would have caught node04's 2026-07-26 crash
+        # 17 hours before it died for good.
+        - alert: HostUnexpectedReboot
+          expr: changes(node_boot_time_seconds{job="proxmox-node-exporter"}[15m]) > 0
+          for: 0m
+          labels:
+            severity: warning
+            component: host
+          annotations:
+            summary: "Host {{ $labels.nodename }} rebooted unexpectedly"
+            description: >-
+              {{ $labels.nodename }} booted within the last 15m. If this was not
+              planned, treat it as a hardware warning
+
+    # ------------------------------------------------------------------
+    # Disks. NVMe critical-warning and media errors only; no "disk is 80%
+    # full" style noise here.
+    # ------------------------------------------------------------------
+    - name: bijouxlabs.disk
+      rules:
+        - alert: SmartCriticalWarning
+          expr: smartctl_device_critical_warning > 0
+          for: 5m
+          labels:
+            severity: critical
+            component: disk
+          annotations:
+            summary: "SMART critical warning on {{ $labels.nodename }} {{ $labels.device }}"
+            description: >-
+              NVMe critical warning bitfield is {{ $value }} on
+              {{ $labels.nodename }}/{{ $labels.device }}. This is the drive
+              reporting its own failure. Back up and replace.
+
+        - alert: SmartMediaErrors
+          expr: increase(smartctl_device_media_errors[6h]) > 0
+          for: 0m
+          labels:
+            severity: warning
+            component: disk
+          annotations:
+            summary: "New media errors on {{ $labels.nodename }} {{ $labels.device }}"
+            description: >-
+              {{ $value }} new unrecoverable data-integrity errors in 6h on
+              {{ $labels.nodename }}/{{ $labels.device }}. Suspect the drive or,
+              for USB-attached NVMe, the enclosure.
+
+        - alert: SmartSpareBelowThreshold
+          expr: smartctl_device_available_spare < smartctl_device_available_spare_threshold
+          for: 15m
+          labels:
+            severity: critical
+            component: disk
+          annotations:
+            summary: "NVMe spare blocks exhausted on {{ $labels.nodename }} {{ $labels.device }}"
+            description: >-
+              Available spare {{ $value }}% is below the drive's own threshold.
+              The drive is out of remap capacity — replace it.
+
+        - alert: SmartWearoutHigh
+          expr: smartctl_device_percentage_used > 90
+          for: 1h
+          labels:
+            severity: warning
+            component: disk
+          annotations:
+            summary: "NVMe wearout {{ $value }}% on {{ $labels.nodename }} {{ $labels.device }}"
+            description: >-
+              Drive has consumed {{ $value }}% of its rated write endurance.
+              Plan a replacement; not urgent.
+
+    # ------------------------------------------------------------------
+    # Capacity. Root filesystems only — /boot sits at a static 50-65% on
+    # every node and would be permanent noise, and tmpfs/fuse mounts are
+    # not real storage.
+    # ------------------------------------------------------------------
+    - name: bijouxlabs.capacity
+      rules:
+        # Covers physical Proxmox hosts, k3s VM nodes, and the desktop once
+        # its scrape config lands — any node-exporter reporting a root fs.
+        - alert: HostRootDiskSpaceLow
+          expr: |
+            100 * (
+              1 - node_filesystem_avail_bytes{mountpoint="/", fstype=~"ext4|xfs|btrfs"}
+                / node_filesystem_size_bytes{mountpoint="/", fstype=~"ext4|xfs|btrfs"}
+            ) >= 75
+          for: 15m
+          labels:
+            severity: warning
+            component: disk
+          annotations:
+            summary: "Root filesystem {{ $value | printf \"%.0f\" }}% full on {{ $labels.nodename }}{{ $labels.instance }}"
+            description: >-
+              The OS disk is at or above 75% capacity. The k3s VMs run 32Gi
+              root disks with little headroom, and a full root disk takes
+              kubelet and containerd down with it.
+
+        - alert: HostRootDiskSpaceCritical
+          expr: |
+            100 * (
+              1 - node_filesystem_avail_bytes{mountpoint="/", fstype=~"ext4|xfs|btrfs"}
+                / node_filesystem_size_bytes{mountpoint="/", fstype=~"ext4|xfs|btrfs"}
+            ) >= 90
+          for: 5m
+          labels:
+            severity: critical
+            component: disk
+          annotations:
+            summary: "Root filesystem {{ $value | printf \"%.0f\" }}% full on {{ $labels.nodename }}{{ $labels.instance }}"
+            description: >-
+              OS disk above 90%. Imminent failure of kubelet/containerd on this
+              node. Free space now.
+
+    # ------------------------------------------------------------------
+    # Memory (EDAC). Uncorrectable errors are never noise.
+    # ------------------------------------------------------------------
+    - name: bijouxlabs.memory
+      rules:
+        - alert: MemoryUncorrectableErrors
+          expr: increase(node_edac_uncorrectable_errors_total[1h]) > 0
+          for: 0m
+          labels:
+            severity: critical
+            component: memory
+          annotations:
+            summary: "Uncorrectable ECC errors on {{ $labels.nodename }}"
+            description: >-
+              {{ $value }} uncorrectable memory errors in 1h on
+              {{ $labels.nodename }}. RAM is failing and data may already be
+              corrupt. Run memtest86+ for at least 4 passes.
+
+        - alert: MemoryCorrectableErrorsHigh
+          expr: increase(node_edac_correctable_errors_total[6h]) > 100
+          for: 0m
+          labels:
+            severity: warning
+            component: memory
+          annotations:
+            summary: "Elevated correctable ECC errors on {{ $labels.nodename }}"
+            description: >-
+              {{ $value }} correctable errors in 6h on {{ $labels.nodename }}.
+              Corrected for now, but a rising rate predicts a DIMM failure.
+
+    # ------------------------------------------------------------------
+    # Thermals. Compared against the sensor's own critical threshold rather
+    # than a hardcoded number, so it self-tunes per chip.
+    # ------------------------------------------------------------------
+    - name: bijouxlabs.thermal
+      rules:
+        # Scoped to CPU package/core sensors rather than every hwmon sensor.
+        # Deliberate:
+        #   - NVMe drives idle at ~48C here and legitimately reach 70C+ under
+        #     load without being in trouble. Alerting on them at 70 would be
+        #     pure noise; SmartCriticalWarning and HostTemperatureCritical
+        #     already cover genuine drive thermal failure.
+        #   - thermal_zone0 reads ~28C (ambient/ACPI) and would never fire.
+        - alert: HostCPUTemperatureWarning
+          expr: |
+            max by (nodename, instance) (
+              node_hwmon_temp_celsius{
+                job="proxmox-node-exporter",
+                chip=~"platform_coretemp.*|.*k10temp.*"
+              }
+            ) >= 70
+          for: 5m
+          labels:
+            severity: warning
+            component: thermal
+          annotations:
+            summary: "CPU on {{ $labels.nodename }} at {{ $value | printf \"%.0f\" }}°C"
+            description: >-
+              CPU temperature has been at or above 70°C for 5m. Not yet
+              critical.
+
+        # Separate threshold for the desktop: a 5900X under gaming or compile
+        # load is expected to run hot, and k10temp reports Tctl, which carries
+        # a built-in offset (TjMax 95C). 80C is normal mid-session, so this
+        # uses a 15m window to catch "stuck hot" rather than "working hard".
+        # Raise to 85C if it still chatters during long sessions.
+        - alert: DesktopCPUTemperatureWarning
+          expr: |
+            max by (nodename, instance) (
+              node_hwmon_temp_celsius{
+                job="desktop-node-exporter",
+                chip=~"platform_coretemp.*|.*k10temp.*"
+              }
+            ) >= 80
+          for: 15m
+          labels:
+            severity: warning
+            component: thermal
+          annotations:
+            summary: "Desktop CPU at {{ $value | printf \"%.0f\" }}°C for 15m"
+            description: >-
+              Desktop CPU has held at or above 80°C for 15 minutes.
+
+        - alert: HostTemperatureCritical
+          expr: node_hwmon_temp_celsius >= on(instance, chip, sensor) node_hwmon_temp_crit_celsius
+          for: 5m
+          labels:
+            severity: critical
+            component: thermal
+          annotations:
+            summary: "{{ $labels.nodename }} sensor {{ $labels.sensor }} at {{ $value }}°C"
+            description: >-
+              Temperature has been at or above the manufacturer's critical
+              threshold for 5m. Expect throttling then shutdown. Check fans and
+              dust.

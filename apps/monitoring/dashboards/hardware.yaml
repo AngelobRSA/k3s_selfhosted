@@ -1,0 +1,537 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-hardware
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  hardware.json: |
+    {
+      "title": "Hardware Health / Fleet Overview",
+      "uid": "hardware-bijouxlabs",
+      "tags": ["hardware", "bijouxlabs"],
+      "schemaVersion": 38,
+      "version": 1,
+      "refresh": "1m",
+      "timezone": "browser",
+      "time": { "from": "now-24h", "to": "now" },
+      "templating": {
+        "list": [
+          {
+            "name": "host",
+            "label": "Physical host",
+            "type": "query",
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "query": "label_values(up{job=~\"proxmox-node-exporter|desktop-node-exporter\"}, nodename)",
+            "multi": true,
+            "includeAll": true,
+            "current": { "text": "All", "value": "$__all" },
+            "refresh": 2
+          }
+        ]
+      },
+      "panels": [
+        {
+          "type": "row",
+          "title": "Fleet status",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "collapsed": false
+        },
+        {
+          "type": "stat",
+          "title": "Physical hosts reachable",
+          "description": "node-exporter reachability on the Proxmox hypervisors. Any red here means every VM on that host is gone.",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 5, "w": 5, "x": 0, "y": 1 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(up{job=\"proxmox-node-exporter\"})",
+              "legendFormat": "up"
+            },
+            {
+              "refId": "B",
+              "expr": "count(up{job=\"proxmox-node-exporter\"})",
+              "legendFormat": "total"
+            }
+          ],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "textMode": "value_and_name",
+            "colorMode": "value",
+            "graphMode": "none"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "green", "value": 5 }
+                ]
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "title": "Firing hardware alerts",
+          "description": "Live count from the bijouxlabs-hardware PrometheusRule, split by severity.",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 5, "w": 6, "x": 5, "y": 1 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (severity) (ALERTS{alertstate=\"firing\", component=~\"host|disk|memory|thermal\"})",
+              "legendFormat": "{{severity}}"
+            }
+          ],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "textMode": "value_and_name",
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "red", "value": 1 }
+                ]
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "title": "Host uptime",
+          "description": "Time since last boot. A value that resets unexpectedly is what preceded the node04 failure.",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 5, "w": 13, "x": 11, "y": 1 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "time() - node_boot_time_seconds{job=\"proxmox-node-exporter\"}",
+              "legendFormat": "{{nodename}}"
+            }
+          ],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "textMode": "value_and_name",
+            "colorMode": "value",
+            "graphMode": "none",
+            "orientation": "horizontal"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "orange", "value": null },
+                  { "color": "green", "value": 86400 }
+                ]
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "row",
+          "title": "Thermals",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
+          "collapsed": false
+        },
+        {
+          "type": "timeseries",
+          "title": "CPU temperature",
+          "description": "Thresholds match the alert rules exactly: 70C warns on cluster hosts, 80C on the desktop. Dashed lines are those thresholds.",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 9, "w": 17, "x": 0, "y": 7 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "max by (nodename) (node_hwmon_temp_celsius{job=~\"proxmox-node-exporter|desktop-node-exporter\", chip=~\"platform_coretemp.*|.*k10temp.*\", nodename=~\"$host\"})",
+              "legendFormat": "{{nodename}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "celsius",
+              "min": 20,
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 5,
+                "showPoints": "never",
+                "thresholdsStyle": { "mode": "dashed" }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 70 },
+                  { "color": "red", "value": 85 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max", "mean"] },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          }
+        },
+        {
+          "type": "gauge",
+          "title": "CPU temp now",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 9, "w": 7, "x": 17, "y": 7 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "max by (nodename) (node_hwmon_temp_celsius{job=~\"proxmox-node-exporter|desktop-node-exporter\", chip=~\"platform_coretemp.*|.*k10temp.*\", nodename=~\"$host\"})",
+              "legendFormat": "{{nodename}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "celsius",
+              "min": 20,
+              "max": 100,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 70 },
+                  { "color": "red", "value": 85 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "showThresholdMarkers": true
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "Time spent above 70C (rolling 1h)",
+          "description": "Minutes per hour each host sat at or above the warning threshold. Sustained bands here are what distinguishes a load spike from a cooling problem.",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum_over_time((max by (nodename) (node_hwmon_temp_celsius{job=\"proxmox-node-exporter\", chip=~\"platform_coretemp.*|.*k10temp.*\", nodename=~\"$host\"}) >= bool 70)[1h:1m])",
+              "legendFormat": "{{nodename}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "m",
+              "min": 0,
+              "max": 60,
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "showPoints": "never"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 15 },
+                  { "color": "red", "value": 40 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max"] },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          }
+        },
+        {
+          "type": "row",
+          "title": "Capacity",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 24 },
+          "collapsed": false
+        },
+        {
+          "type": "timeseries",
+          "title": "Root filesystem usage",
+          "description": "All node-exporters: physical hosts, k3s VMs, and the desktop. Warning at 75%, critical at 90% — same as the alerts.",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 9, "w": 17, "x": 0, "y": 25 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "100 * (1 - node_filesystem_avail_bytes{mountpoint=\"/\", fstype=~\"ext4|xfs|btrfs\"} / node_filesystem_size_bytes{mountpoint=\"/\", fstype=~\"ext4|xfs|btrfs\"})",
+              "legendFormat": "{{nodename}}{{instance}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 5,
+                "showPoints": "never",
+                "thresholdsStyle": { "mode": "dashed" }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 75 },
+                  { "color": "red", "value": 90 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max"] },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          }
+        },
+        {
+          "type": "bargauge",
+          "title": "Root fs now",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 9, "w": 7, "x": 17, "y": 25 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "100 * (1 - node_filesystem_avail_bytes{mountpoint=\"/\", fstype=~\"ext4|xfs|btrfs\"} / node_filesystem_size_bytes{mountpoint=\"/\", fstype=~\"ext4|xfs|btrfs\"})",
+              "legendFormat": "{{nodename}}{{instance}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 75 },
+                  { "color": "red", "value": 90 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "sortBy": "Value",
+            "sortDesc": true
+          }
+        },
+        {
+          "type": "row",
+          "title": "Drives (SMART)",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 34 },
+          "collapsed": false
+        },
+        {
+          "type": "table",
+          "title": "Drive inventory and wear",
+          "description": "One row per physical drive. Wearout and available spare are the two numbers that predict failure; media errors are the number that confirms it.",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 9, "w": 24, "x": 0, "y": 35 },
+          "targets": [
+            { "refId": "A", "expr": "smartctl_device_percentage_used", "format": "table", "instant": true },
+            { "refId": "B", "expr": "smartctl_device_available_spare", "format": "table", "instant": true },
+            { "refId": "C", "expr": "smartctl_device_media_errors", "format": "table", "instant": true },
+            { "refId": "D", "expr": "smartctl_device_power_on_seconds / 86400", "format": "table", "instant": true },
+            { "refId": "E", "expr": "smartctl_device_critical_warning", "format": "table", "instant": true }
+          ],
+          "transformations": [
+            { "id": "merge", "options": {} },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true },
+                "renameByName": {
+                  "nodename": "Host",
+                  "device": "Device",
+                  "model_name": "Model",
+                  "Value #A": "Wearout %",
+                  "Value #B": "Spare %",
+                  "Value #C": "Media errors",
+                  "Value #D": "Power-on days",
+                  "Value #E": "Critical warn"
+                }
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "custom": { "align": "auto" } },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Wearout %" },
+                "properties": [
+                  { "id": "unit", "value": "percent" },
+                  { "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "gradient" } },
+                  { "id": "max", "value": 100 },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        { "color": "green", "value": null },
+                        { "color": "orange", "value": 80 },
+                        { "color": "red", "value": 90 }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Media errors" },
+                "properties": [
+                  { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        { "color": "green", "value": null },
+                        { "color": "red", "value": 1 }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Critical warn" },
+                "properties": [
+                  { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        { "color": "green", "value": null },
+                        { "color": "red", "value": 1 }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Power-on days" },
+                "properties": [{ "id": "decimals", "value": 0 }]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Spare %" },
+                "properties": [{ "id": "unit", "value": "percent" }]
+              }
+            ]
+          },
+          "options": { "showHeader": true, "sortBy": [{ "displayName": "Wearout %", "desc": true }] }
+        },
+        {
+          "type": "timeseries",
+          "title": "Drive temperature",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 44 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "node_hwmon_temp_celsius{job=\"proxmox-node-exporter\", chip=~\"nvme.*\", nodename=~\"$host\"}",
+              "legendFormat": "{{nodename}} {{chip}} {{sensor}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "celsius",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 0,
+                "showPoints": "never"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 70 },
+                  { "color": "red", "value": 80 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max"] },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          }
+        },
+        {
+          "type": "row",
+          "title": "Memory (ECC)",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 52 },
+          "collapsed": false
+        },
+        {
+          "type": "timeseries",
+          "title": "EDAC error rate",
+          "description": "Flat at zero is healthy. Any uncorrectable line leaving zero means failing RAM. A rising correctable rate is an early warning.",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 53 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "increase(node_edac_correctable_errors_total{nodename=~\"$host\"}[1h])",
+              "legendFormat": "{{nodename}} correctable"
+            },
+            {
+              "refId": "B",
+              "expr": "increase(node_edac_uncorrectable_errors_total{nodename=~\"$host\"}[1h])",
+              "legendFormat": "{{nodename}} UNCORRECTABLE"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "min": 0,
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "showPoints": "never"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byRegexp", "options": ".*UNCORRECTABLE.*" },
+                "properties": [
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } },
+                  { "id": "custom.lineWidth", "value": 3 }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max"] },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          }
+        }
+      ]
+    }

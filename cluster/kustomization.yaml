@@ -9,6 +9,7 @@ kind: Kustomization
 resources:
   - flux-system
   - topology
+  - coredns
   - kube-vip
   - metallb
   - cilium

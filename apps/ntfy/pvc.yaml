@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ntfy-data
+  namespace: ntfy
+spec:
+  accessModes:
+    - ReadWriteOnce
+  # Replica count comes from the StorageClass, never the PVC annotation.
+  # longhorn-nvme = 2 replicas pinned to the nvme-tagged disks.
+  storageClassName: longhorn-nvme
+  resources:
+    requests:
+      storage: 2Gi

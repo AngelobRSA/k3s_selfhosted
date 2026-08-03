@@ -15,10 +15,14 @@ spec:
       labels:
         app: ocis
     spec:
+      automountServiceAccountToken: false
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         # Runs once before the server. OCIS refuses to start without a config
         # (ocis.yaml) holding its service secrets + admin password. `ocis init`
@@ -27,6 +31,11 @@ spec:
         # restart would mint new secrets and lock you out of your own data.
         - name: init
           image: owncloud/ocis:8.1.0
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -50,12 +59,18 @@ spec:
           volumeMounts:
             - mountPath: /var/lib/ocis
               name: data
+            - mountPath: /tmp
+              name: tmp
       containers:
         - name: ocis
           image: owncloud/ocis:8.1.0
           args: ["server"]
           securityContext:
             allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
           ports:
             - containerPort: 9200
           env:
@@ -78,6 +93,8 @@ spec:
           volumeMounts:
             - mountPath: /var/lib/ocis
               name: data
+            - mountPath: /tmp
+              name: tmp
           readinessProbe:
             tcpSocket:
               port: 9200
@@ -93,3 +110,5 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: ocis-data
+        - name: tmp
+          emptyDir: {}

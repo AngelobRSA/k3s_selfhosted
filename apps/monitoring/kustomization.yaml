@@ -4,3 +4,5 @@ resources:
   - namespace.yaml
   - helmrelease.yaml
   - dashboards/smartctl.yaml
+  - dashboards/hardware.yaml
+  - rules/hardware.yaml

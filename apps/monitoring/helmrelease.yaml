@@ -89,6 +89,114 @@ spec:
           limits:
             memory: 4Gi
 
+    alertmanager:
+      config:
+        global:
+          resolve_timeout: 5m
+
+        receivers:
+          # Discard sink. Only Watchdog should ever land here.
+          - name: "null"
+
+          # ntfy renders Alertmanager's payload with its own built-in
+          # template (requires ntfy >= v2.14.0; we run v2.26.3). No bridge
+          # or translator container is needed.
+          - name: ntfy
+            webhook_configs:
+              - url: "http://ntfy.ntfy.svc.cluster.local/bijouxlabs?template=alertmanager"
+                send_resolved: true
+
+          - name: ntfy-critical
+            webhook_configs:
+              - url: "http://ntfy.ntfy.svc.cluster.local/bijouxlabs-critical?template=alertmanager&priority=urgent"
+                send_resolved: true
+
+        route:
+          # Group by alertname+severity so one failed host produces one
+          # notification rather than one per affected component.
+          group_by: ["alertname", "severity"]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 12h
+          receiver: ntfy
+          routes:
+            # Watchdog fires constantly by design — it is the dead-man's
+            # switch, not an alert. Never notify on it.
+            - matchers:
+                - alertname = "Watchdog"
+              receiver: "null"
+
+            - matchers:
+                - alertname = "ProxmoxHostDown"
+                - severity = "critical"
+              receiver: ntfy-critical
+              repeat_interval: 4h
+
+            - matchers:
+                - alertname = "SmartCriticalWarning"
+                - severity = "critical"
+              receiver: ntfy-critical
+              repeat_interval: 4h
+
+            - matchers:
+                - alertname = "HostRootDiskSpaceCritical"
+                - severity = "critical"
+              receiver: ntfy-critical
+              repeat_interval: 4h
+
+            - matchers:
+                - alertname = "HostTemperatureCritical"
+                - severity = "critical"
+              receiver: ntfy-critical
+              repeat_interval: 4h
+
+            # Warnings
+
+            - matchers:
+                - alertname = "DesktopCPUTemperatureWarning"
+                - severity = "warning"
+              receiver: ntfy
+              repeat_interval: 12h
+
+            - matchers:
+                - alertname = "HostCPUTemperatureWarning"
+                - severity = "warning"
+              receiver: ntfy
+              repeat_interval: 12h
+
+            - matchers:
+                - alertname = "HostRootDiskSpaceLow"
+                - severity = "warning"
+              receiver: ntfy
+              repeat_interval: 24h
+
+            - matchers:
+                - alertname = "SmartWearoutHigh"
+                - severity = "warning"
+              receiver: ntfy
+              repeat_interval: 48h
+
+            # Safety net. The routes above enumerate specific alertnames, which
+            # means any NEW critical rule silently inherits the quiet default
+            # until someone remembers to add a route. This catches them.
+            # Today it covers MemoryUncorrectableErrors and
+            # SmartSpareBelowThreshold, neither of which is listed above.
+            # Must stay last — matching stops at the first hit.
+            - matchers:
+                - severity = "critical"
+              receiver: ntfy-critical
+              repeat_interval: 4h
+
+        inhibit_rules:
+          # A dead host implies its disks and sensors are unreachable. Suppress
+          # the downstream noise so one failure sends one notification.
+          - source_matchers: ["alertname = ProxmoxHostDown"]
+            target_matchers: ["component =~ disk|thermal|memory"]
+            equal: ["nodename"]
+          - source_matchers: ["severity = critical"]
+            target_matchers: ["severity = warning"]
+            equal: ["alertname", "nodename"]
+
     grafana:
       fullnameOverride: grafana
       grafana.ini:

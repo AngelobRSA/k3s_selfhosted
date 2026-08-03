@@ -1,0 +1,21 @@
+base-url: "https://ntfy.bijouxlabs.cc"
+listen-http: ":80"
+
+cache-file: "/var/lib/ntfy/cache.db"
+cache-duration: "72h"
+attachment-cache-dir: "/var/lib/ntfy/attachments"
+
+# Behind Traefik, which sets X-Forwarded-For. Required for correct
+# client IPs and rate limiting.
+behind-proxy: true
+
+# LAN + Tailscale only; this host is not published via cloudflared.
+# Hardening follow-up: set auth-default-access "deny-all" and provision
+# a token for Alertmanager (needs a manual `ntfy user add`, so it is not
+# done here to keep the deploy fully declarative).
+auth-file: "/var/lib/ntfy/auth.db"
+auth-default-access: "read-write"
+
+# Keep the web UI usable but quiet.
+enable-signup: false
+enable-login: true

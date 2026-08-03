@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  # In-cluster split-horizon DNS for *.bijouxlabs.cc.
+  #
+  # LAN clients resolve these to the Traefik MetalLB VIP (192.168.0.169) via
+  # dnsmasq on the Proxmox host. That VIP is UNREACHABLE from inside a pod
+  # because Traefik runs externalTrafficPolicy: Local + MetalLB L2 — a pod
+  # hairpinning to the external VIP blackholes unless it happens to land on a
+  # node hosting a Traefik endpoint.
+  #
+  # This rewrite points every *.bijouxlabs.cc lookup at Traefik's ClusterIP
+  # Service instead, so any in-cluster consumer (homepage siteMonitor, n8n,
+  # future apps) reaches the ingress via the internal path. `answer auto`
+  # restores the original name in the response so strict clients don't balk.
+  #
+  # The `*.override` suffix injects this into the existing `.:53` server block
+  # (see `import /etc/coredns/custom/*.override` in the coredns Corefile).
+  bijouxlabs.override: |
+    rewrite stop {
+      name regex (.*)\.bijouxlabs\.cc traefik.traefik.svc.cluster.local
+      answer auto
+    }

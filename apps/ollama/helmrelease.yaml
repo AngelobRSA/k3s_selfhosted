@@ -24,6 +24,17 @@ spec:
   interval: 30m
   timeout: 10m
   values:
+    # TODO(human): define the hardening for the ollama container to clear radar's
+    # privilegeEscalation (danger) + runAsRoot/readOnlyRootFs warnings.
+    # The otwld/ollama chart wires these two keys straight into the pod:
+    #   podSecurityContext:   -> pod-level (fsGroup, runAsUser/Group, runAsNonRoot, seccompProfile)
+    #   securityContext:      -> container-level (allowPrivilegeEscalation, readOnlyRootFilesystem, capabilities)
+    # Ollama stores models under /root/.ollama by default and this chart mounts the
+    # PVC there — so your UID choice and any readOnlyRootFilesystem decision have to
+    # keep that path (and /tmp) writable. Fill in both blocks below.
+    podSecurityContext: {}
+    securityContext: {}
+
     ollama:
       gpu:
         enabled: false

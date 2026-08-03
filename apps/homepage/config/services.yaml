@@ -71,10 +71,10 @@
         icon: longhorn.png
         siteMonitor: http://192.168.0.168
     - Traefik:
-        href: https://traefik.bijouxlabs.cc/ping
+        href: https://traefik.bijouxlabs.cc/dashboard/
         description: Reverse proxy
         icon: traefik.png
-        siteMonitor: https://traefik.bijouxlabs.cc/ping
+        siteMonitor: https://traefik.bijouxlabs.cc/dashboard/
     - Grafana:
         href: https://grafana.bijouxlabs.cc
         description: Cluster metrics & dashboards
