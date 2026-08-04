@@ -23,6 +23,18 @@ spec:
         name: prometheus-community
         namespace: flux-system
   interval: 30m
+  # The default 5m is not enough: an upgrade rolls the Prometheus StatefulSet,
+  # and a restart here replays a 45GB WAL before the pod reports ready. The
+  # 2026-08-03 upgrade hit "context deadline exceeded" mid-rollout — Helm had
+  # already applied the manifests, it just gave up waiting, which left the
+  # release marked failed while the new config was in fact live.
+  timeout: 20m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
   values:
     # k3s embeds these components and does not expose their metrics endpoints
     kubeControllerManager:
@@ -112,9 +124,22 @@ spec:
                 send_resolved: true
 
         route:
-          # Group by alertname+severity so one failed host produces one
-          # notification rather than one per affected component.
-          group_by: ["alertname", "severity"]
+          # Grouping controls both notification count AND message size — one
+          # knob. ["alertname","severity"] batched 7 alerts on 2026-08-03 and
+          # blew ntfy's limit, dropping all of them.
+          #
+          # nodename is the primary key: one failing host produces one message,
+          # and inhibit_rules below already collapse its downstream disk/thermal
+          # /memory noise via equal: ["nodename"].
+          #
+          # alertname is required alongside it. Only our 13 hardware rules carry
+          # nodename (it rides in from the scrape-config static_configs labels);
+          # the ~127 bundled kube-prometheus-stack rules do not. Alertmanager
+          # treats an absent label as a single shared group value, so grouping
+          # on nodename alone would funnel EVERY Kubernetes alert into one
+          # unbounded group — the exact batch that overflowed. alertname keeps
+          # those split.
+          group_by: ["nodename", "alertname"]
           group_wait: 30s
           group_interval: 5m
           repeat_interval: 12h

@@ -1,6 +1,16 @@
 base-url: "https://ntfy.bijouxlabs.cc"
 listen-http: ":80"
 
+# Alertmanager's webhook payload carries every alert in a group, and ntfy's
+# built-in `alertmanager` template renders all of them into one message. A
+# 7-alert group blew the 4K default on 2026-08-03 and ntfy returned 400
+# (code 40041). Alertmanager treats 4xx as unrecoverable, so those alerts were
+# dropped outright rather than retried. Headroom here is the backstop; the
+# grouping in the Alertmanager route is what keeps messages small in practice.
+# Note: >4K messages are not deliverable over Firebase/APNs, which only matters
+# for iOS via the ntfy.sh proxy. LAN/Tailscale Android clients are unaffected.
+message-size-limit: "16K"
+
 cache-file: "/var/lib/ntfy/cache.db"
 cache-duration: "72h"
 attachment-cache-dir: "/var/lib/ntfy/attachments"
