@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vikunja
+  namespace: vikunja
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vikunja
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: vikunja
+    spec:
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: vikunja
+          image: vikunja/vikunja:2.4.0
+          securityContext:
+            allowPrivilegeEscalation: false
+          ports:
+            - containerPort: 3456
+          env:
+            - name: VIKUNJA_SERVICE_PUBLICURL
+              value: https://todo.bijouxlabs.cc/
+            - name: VIKUNJA_SERVICE_TIMEZONE
+              value: Africa/Johannesburg
+            # Registration open so household members can sign up.
+            # NOTE: todo.bijouxlabs.cc is currently LAN/tailnet-only. If this
+            # host is ever exposed publicly (e.g. via cloudflared), either set
+            # this back to "false" once everyone has an account, or put access
+            # control in front of it — otherwise anyone can self-register.
+            - name: VIKUNJA_SERVICE_ENABLEREGISTRATION
+              value: "true"
+            - name: VIKUNJA_DATABASE_TYPE
+              value: sqlite
+            - name: VIKUNJA_DATABASE_PATH
+              value: /db/vikunja.db
+            - name: VIKUNJA_FILES_BASEPATH
+              value: /files
+            - name: VIKUNJA_SERVICE_JWTSECRET
+              valueFrom:
+                secretKeyRef:
+                  name: vikunja-secret
+                  key: VIKUNJA_SERVICE_JWTSECRET
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /db
+              subPath: db
+            - name: data
+              mountPath: /files
+              subPath: files
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: vikunja-data

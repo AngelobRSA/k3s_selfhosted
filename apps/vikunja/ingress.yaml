@@ -1,24 +1,24 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: n8n
-  namespace: n8n
+  name: vikunja
+  namespace: vikunja
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
 spec:
   ingressClassName: traefik
   rules:
-    - host: n8n.bijouxlabs.cc
+    - host: todo.bijouxlabs.cc
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: n8n
+                name: vikunja
                 port:
-                  number: 5678
+                  number: 3456
   tls:
     - hosts:
-        - n8n.bijouxlabs.cc
+        - todo.bijouxlabs.cc
