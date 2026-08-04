@@ -6,7 +6,6 @@ resources:
   - homepage
   - monitoring
   - immich
-  - n8n
   - opengist
   - uptime-kuma
   - vaultwarden
@@ -19,3 +18,4 @@ resources:
   - stefhq
   - ocis
   - ntfy
+  - vikunja

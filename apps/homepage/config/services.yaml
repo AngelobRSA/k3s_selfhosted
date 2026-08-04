@@ -41,6 +41,11 @@
         description: Local LLM inference server
         icon: ollama.png
         siteMonitor: https://ollama.bijouxlabs.cc
+    - Vikunja:
+        href: https://todo.bijouxlabs.cc
+        description: Tasks & to-do lists
+        icon: vikunja.png
+        siteMonitor: https://todo.bijouxlabs.cc
     - StefHQ:
         href: https://stefhq.io
         description: Stef's app (public)
@@ -53,11 +58,6 @@
         description: Smart-home automation
         icon: home-assistant.png
         siteMonitor: https://homeassistant.bijouxlabs.cc
-    - n8n:
-        href: https://n8n.bijouxlabs.cc
-        description: Workflow automation
-        icon: n8n.png
-        siteMonitor: https://n8n.bijouxlabs.cc
 
 - Infrastructure:
     - Proxmox:
