@@ -1,3 +1,19 @@
+# Longhorn backup schedule → s3://bijouxlabs-longhorn-backups (Backblaze B2)
+#
+# ⚠️ 2026-08-05: `default` added to backup-daily below. Before this, the two jobs
+# targeted ONLY the `critical` and `standard` groups — which between them covered
+# **4 of 18 volumes**. The other 14 (ocis 50Gi, copyparty 50Gi, paperless 30Gi,
+# vaultwarden, karakeep, qdrant, vikunja, ollama, ntfy, …) had NEVER been backed
+# up. The config looked complete and was silently protecting ~11% of the data.
+#
+# `default` is the group Longhorn assigns to EVERY volume automatically, so it is
+# the correct catch-all: any future PVC is covered the moment it is created, with
+# no label to remember. `critical`/`standard` remain meaningful as opt-in tiers.
+#
+# This was found the hard way: ocis-data's only replica died with kmaster04's
+# filesystem and there was no backup to restore from. See
+# docs/runbooks/physical-topology.md.
+---
 apiVersion: longhorn.io/v1beta2
 kind: RecurringJob
 metadata:
@@ -8,6 +24,9 @@ spec:
   task: backup
   groups:
     - critical
+    # Catch-all. Every volume is in `default`, so this gives the whole cluster a
+    # 24h RPO instead of "whatever someone remembered to label".
+    - default
   retain: 7
   concurrency: 1
 ---
