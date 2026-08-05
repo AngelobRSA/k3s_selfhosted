@@ -38,6 +38,11 @@ spec:
             - name: config
               mountPath: /etc/ntfy/server.yml
               subPath: server.yml
+            # ntfy loads named templates from --template-dir, default
+            # /etc/ntfy/templates. subPath keeps server.yml above intact.
+            - name: config
+              mountPath: /etc/ntfy/templates/bijouxlabs.yml
+              subPath: bijouxlabs.yml
             - name: data
               mountPath: /var/lib/ntfy
           livenessProbe:

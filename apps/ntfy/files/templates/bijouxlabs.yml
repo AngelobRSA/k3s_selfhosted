@@ -1,0 +1,52 @@
+# Named ntfy message template for Alertmanager webhooks.
+#
+# Referenced as ?template=bijouxlabs from the Alertmanager receivers in
+# apps/monitoring/helmrelease.yaml. Replaces ntfy's built-in
+# ?template=alertmanager, which rendered 9 lines per notification:
+#   Status / Receiver / Alert / Instance / Severity / Starts at /
+#   Summary / Description / Source
+# Of those, Receiver and Source carry no operator value, Status and Alert
+# are folded into the title below, and Instance/Summary/Description
+# overlap heavily. This renders two lines total.
+#
+# Input is the raw Alertmanager webhook payload (schema version 4):
+#   .status                     "firing" | "resolved"  (whole group)
+#   .alerts[]                   every alert in the group
+#   .alerts[].labels            alertname, severity, nodename, node, ...
+#   .alerts[].annotations       summary, description
+#   .commonLabels               labels identical across ALL alerts in group
+#   .commonAnnotations          annotations identical across ALL alerts
+#   .groupLabels                the group_by keys: nodename, alertname
+#
+# ⚠️ commonLabels/commonAnnotations are EMPTY when alerts in a group differ,
+# so every lookup below is guarded and there is a final fallback.
+#
+# ⚠️ Only `title` and `message` are templated. ntfy does NOT template
+# `click`, `tags` or `priority` — those are static query params on the
+# webhook URL. That is why the tap-through link points at Alertmanager
+# rather than each alert's own generatorURL.
+
+# Emoji encodes firing vs resolved; alertname always prints.
+title: '{{if eq .status "resolved"}}✅{{else}}🚨{{end}} {{.commonLabels.alertname}}'
+
+# One line: "<who> · <what>".
+#
+# WHO — from labels, never from prose. Our 13 hardware rules label
+# `nodename`; the ~127 bundled kube-prometheus-stack rules use `node` or
+# `instance`. `instance` is rewritten to the real node name by the
+# node-exporter relabeling in apps/monitoring/helmrelease.yaml, so this
+# reads "kmaster01" and not "192.168.0.154:9100".
+#
+# WHAT — description first, then summary. The two conventions are
+# INVERTED between rule sets:
+#   upstream : summary = generic headline ("Host is running out of
+#              memory."), description = the detail WITH the numbers.
+#   ours     : summary = the detail with $value, description = remediation
+#              prose.
+# description-first is correct for upstream (keeps "currently at 93.40%")
+# and acceptable for ours.
+#
+# TODO: our 13 hardware rules in apps/monitoring/rules/hardware.yaml still
+# have multi-sentence remediation descriptions, which read long here.
+# Tighten them to one line and move the advice to runbook_url.
+message: '{{with or .commonLabels.nodename .commonLabels.node .commonLabels.instance}}{{.}} · {{end}}{{if .commonAnnotations.description}}{{.commonAnnotations.description}}{{else if .commonAnnotations.summary}}{{.commonAnnotations.summary}}{{else}}{{len .alerts}} alerts: {{range $i, $a := .alerts}}{{if $i}}, {{end}}{{or $a.labels.nodename $a.labels.node $a.labels.instance "?"}}{{end}}{{end}}'

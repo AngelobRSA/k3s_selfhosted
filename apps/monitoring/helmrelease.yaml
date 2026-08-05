@@ -46,6 +46,20 @@ spec:
     kubeProxy:
       enabled: false
 
+    # Rewrite `instance` from the scrape address to the actual node name, so
+    # alerts and dashboards say "kmaster01" instead of "192.168.0.154:9100".
+    #
+    # ⚠️ This MUST live under the `prometheus-node-exporter` SUBCHART key.
+    # The top-level `nodeExporter:` key exists but only carries `enabled` and
+    # `operatingSystems` — putting relabelings there is silently accepted and
+    # silently dropped. See reference_helm_silent_unknown_values.
+    prometheus-node-exporter:
+      prometheus:
+        monitor:
+          relabelings:
+            - sourceLabels: [__meta_kubernetes_pod_node_name]
+              targetLabel: instance
+
     prometheus:
       prometheusSpec:
         scrapeInterval: 30s
@@ -110,17 +124,30 @@ spec:
           # Discard sink. Only Watchdog should ever land here.
           - name: "null"
 
-          # ntfy renders Alertmanager's payload with its own built-in
-          # template (requires ntfy >= v2.14.0; we run v2.26.3). No bridge
-          # or translator container is needed.
+          # ntfy renders Alertmanager's payload server-side (requires ntfy
+          # >= v2.14.0; we run v2.26.3). No bridge or translator container.
+          #
+          # `bijouxlabs` is OUR named template, defined in
+          # apps/ntfy/files/templates/bijouxlabs.yml and mounted into ntfy's
+          # --template-dir. It replaces the built-in `alertmanager` template,
+          # which rendered 9 lines per notification — including
+          # "Instance: <no value>" and "Source: <no value>", since our
+          # hardware rules carry neither label.
+          #
+          # Alertmanager webhook_configs cannot send custom headers, so the
+          # template must be selected via query string.
+          # `click` makes the notification tappable. It is NOT templated by
+          # ntfy (only title/message are), so it cannot deep-link to each
+          # alert's generatorURL — it points at our hardware dashboard.
+          # Alertmanager itself has no ingress, so it is not an option.
           - name: ntfy
             webhook_configs:
-              - url: "http://ntfy.ntfy.svc.cluster.local/bijouxlabs?template=alertmanager"
+              - url: "http://ntfy.ntfy.svc.cluster.local/bijouxlabs?template=bijouxlabs&click=https%3A%2F%2Fgrafana.bijouxlabs.cc%2Fd%2Fhardware-bijouxlabs"
                 send_resolved: true
 
           - name: ntfy-critical
             webhook_configs:
-              - url: "http://ntfy.ntfy.svc.cluster.local/bijouxlabs-critical?template=alertmanager&priority=urgent"
+              - url: "http://ntfy.ntfy.svc.cluster.local/bijouxlabs-critical?template=bijouxlabs&priority=urgent&click=https%3A%2F%2Fgrafana.bijouxlabs.cc%2Fd%2Fhardware-bijouxlabs"
                 send_resolved: true
 
         route:

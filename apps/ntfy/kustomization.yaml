@@ -15,6 +15,10 @@ configMapGenerator:
   - name: ntfy-config
     files:
       - server.yml=files/server.yml
+      # Named message template, mounted into ntfy's --template-dir
+      # (/etc/ntfy/templates). Used as ?template=bijouxlabs by the
+      # Alertmanager receivers.
+      - bijouxlabs.yml=files/templates/bijouxlabs.yml
 
 generatorOptions:
   disableNameSuffixHash: false
