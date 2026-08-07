@@ -3,12 +3,26 @@ kind: PersistentVolumeClaim
 metadata:
   name: immich-library
   namespace: immich
-  annotations:
-    volume.longhorn.io/number-of-replicas: "2"
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: longhorn
+  # Bind explicitly to the restored PV in library-pv.yaml rather than
+  # provisioning a fresh (empty) volume.
+  volumeName: immich-library-restored
   resources:
     requests:
       storage: 60Gi
+  # Empty string (not omitted) => static binding, no dynamic provisioning.
+  # Must match library-pv.yaml exactly or this claim stays Pending.
+  #
+  # Deliberately NOT `longhorn-nvme`: StorageClass parameters only apply at
+  # provisioning time. This volume already exists (restored from B2), so an
+  # SC name here would enforce nothing while implying it did -- the same
+  # false assurance the old `volume.longhorn.io/number-of-replicas: "2"`
+  # annotation gave us, which is why the library was running on 1 replica
+  # when kmaster04's NVMe died on 2026-08-05.
+  #
+  # Replica count for this volume is owned by the Longhorn Volume CR
+  # (numberOfReplicas: 2, on kmaster01 + kmaster03 = separate Proxmox hosts).
+  # See TODO in README follow-ups: that CR should move into git.
+  storageClassName: ""

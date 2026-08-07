@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: immich
 resources:
   - namespace.yaml
+  - library-pv.yaml
   - library-pvc.yaml
   - secrets/db-secret.sops.yaml
   - database-cluster.yaml

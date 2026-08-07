@@ -1,0 +1,38 @@
+---
+# Static PV bound to the Longhorn volume restored from Backblaze B2
+# (backup-1584156d79764e3c, snapshot 2026-08-05T02:00:11Z) after the
+# kmaster04 longhorn-nvme512 disk failure on 2026-08-05 faulted the
+# original volume pvc-fb63b9dc-28a5-43bc-8c44-ac0c2a89cafe.
+#
+# This PV is static on purpose: the underlying Longhorn volume already
+# exists and holds the restored data, so it must NOT be dynamically
+# provisioned (that would hand back an empty volume).
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: immich-library-restored
+spec:
+  capacity:
+    storage: 60Gi
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: immich-library
+    namespace: immich
+  csi:
+    driver: driver.longhorn.io
+    fsType: ext4
+    volumeHandle: immich-library-restored
+    volumeAttributes:
+      dataEngine: v1
+      dataLocality: disabled
+      disableRevisionCounter: "true"
+      fsType: ext4
+      numberOfReplicas: "2"
+      share: "true"
+      staleReplicaTimeout: "30"
