@@ -1,0 +1,69 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: community-charts
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://community-charts.github.io/helm-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: actualbudget
+  namespace: actualbudget
+spec:
+  releaseName: actualbudget
+  chart:
+    spec:
+      chart: actualbudget
+      version: "1.9.3"
+      sourceRef:
+        kind: HelmRepository
+        name: community-charts
+        namespace: flux-system
+  interval: 30m
+  timeout: 10m
+  values:
+    replicaCount: 1
+
+    # Actual Budget is local-first: the server is a sync target, and the
+    # authoritative copy also lives in each browser. That makes it unusually
+    # recoverable — but the server holds the only copy of anything synced from
+    # a device you no longer have, so it is still treated as real data below.
+    persistence:
+      enabled: true
+      # 🔴 NOT longhorn-single. On 2026-08-09 seven single-replica volumes were
+      # stranded on one host when it hard-hung. longhorn-nvme = 2 replicas on
+      # nvme-tagged disks in distinct Proxmox zones.
+      storageClass: longhorn-nvme
+      accessModes:
+        - ReadWriteOnce
+      size: 10Gi
+
+    # Ingress is a separate manifest (ingress.yaml), not the chart's.
+    # This chart ships a values.schema.json that REQUIRES ingress.tls[].secretName,
+    # but every other ingress here omits it on purpose: Traefik's `cloudflare`
+    # certresolver issues and stores the cert itself, so a secretName would name
+    # a Secret that never exists and Traefik would log errors trying to read it.
+    # Same pattern vikunja already uses.
+    ingress:
+      enabled: false
+
+    # Password is set through the web UI on first visit, so no secret is
+    # needed here. ⚠️ Do that immediately after the first deploy — until it is
+    # set, anyone who can reach the host can claim the instance.
+    login:
+      method: password
+
+    # Standard policy (see the 2026-08-09 Goldilocks pass): CPU gets a request
+    # and no limit — it is compressible, so a limit only buys self-inflicted
+    # throttling. Memory gets both, because it is not.
+    # Starting estimate for a small Node app; Goldilocks is enabled on this
+    # namespace and will have real numbers after a couple of weeks.
+    resources:
+      requests:
+        cpu: 25m
+        memory: 256Mi
+      limits:
+        memory: 512Mi
