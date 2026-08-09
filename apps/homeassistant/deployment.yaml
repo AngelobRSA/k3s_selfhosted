@@ -30,12 +30,18 @@ spec:
           volumeMounts:
             - mountPath: /config
               name: config
+          # Sized from Goldilocks/VPA, 18d of samples (2026-08-09).
+          # 🔴 Was the tightest workload in the cluster: VPA's upper bound of
+          # 990Mi sat at 97% of the old 1Gi limit, one busy automation run from
+          # an OOMKill. Request raised to the measured target (933Mi), limit
+          # given real headroom. A restart here is expensive — HA needs
+          # use_x_forwarded_for + trusted_proxies re-applied after a restore.
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
-            limits:
+              cpu: 25m
               memory: 1Gi
+            limits:
+              memory: 1536Mi
       volumes:
         - name: config
           persistentVolumeClaim:

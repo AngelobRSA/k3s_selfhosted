@@ -32,12 +32,14 @@ spec:
     image:
       tag: "1.36.0"
 
+    # Sized from Goldilocks/VPA, 18d (2026-08-09). Upper bound of 111Mi sat at
+    # 87% of the old 128Mi limit — uncomfortably tight for the password store.
     resources:
       requests:
-        cpu: 10m
-        memory: 64Mi
-      limits:
+        cpu: 25m
         memory: 128Mi
+      limits:
+        memory: 256Mi
 
     adminToken:
       existingSecret: vaultwarden-secret

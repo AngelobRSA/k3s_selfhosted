@@ -72,9 +72,14 @@ spec:
         main:
           containers:
             main:
+              # Sized from Goldilocks/VPA, 18d (2026-08-09). Measured 9Mi live
+              # against a 256Mi request; an unbounded queue worker also had no
+              # memory limit at all.
               resources:
                 requests:
-                  cpu: 100m
+                  cpu: 25m
+                  memory: 128Mi
+                limits:
                   memory: 256Mi
 
     # Immich server with Traefik ingress
@@ -100,10 +105,17 @@ spec:
         main:
           containers:
             main:
+              # Sized from Goldilocks/VPA, 18d (2026-08-09).
+              # 🔴 Had NO memory limit — unbounded, so a leak here could take a
+              # whole node with it. Request was 256Mi against a measured 878Mi
+              # (upper bound 940Mi), so the scheduler was under-counting it by
+              # ~600Mi on a memory-tight cluster.
               resources:
                 requests:
-                  cpu: 100m
-                  memory: 256Mi
+                  cpu: 25m
+                  memory: 1Gi
+                limits:
+                  memory: 1536Mi
 
     # Machine learning (facial recognition + smart search)
     # Pinned off kworker01 (CPU-constrained, 2 vCPU cap, was contending with
@@ -122,9 +134,13 @@ spec:
               kubernetes.io/hostname: kworker07
           containers:
             main:
+              # Sized from Goldilocks/VPA, 18d (2026-08-09). Biggest single
+              # reclaim in the cluster: 1Gi requested vs 454Mi measured.
+              # CPU kept at 100m rather than VPA's 15m floor — inference is
+              # bursty and the floor means "below my minimum", not "needs 15m".
               resources:
                 requests:
-                  cpu: 500m
-                  memory: 1Gi
+                  cpu: 100m
+                  memory: 512Mi
                 limits:
                   memory: 3Gi

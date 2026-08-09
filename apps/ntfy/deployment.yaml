@@ -57,12 +57,16 @@ spec:
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
+          # Sized from Goldilocks/VPA, 18d of samples (2026-08-09).
+          # Request was 32Mi against a measured 100Mi — and ntfy carries every
+          # cluster alert, so under-requesting it means the alerting path is
+          # what gets evicted first under node memory pressure.
           resources:
             requests:
-              cpu: 10m
-              memory: 32Mi
-            limits:
+              cpu: 25m
               memory: 128Mi
+            limits:
+              memory: 256Mi
       volumes:
         - name: config
           configMap:

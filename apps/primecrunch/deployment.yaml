@@ -48,12 +48,16 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+          # Sized from Goldilocks/VPA, 18d of samples (2026-08-09).
+          # 🔴 The cpu limit of "1" was throttling this container on 78.6% of
+          # its CFS periods — VPA measured a 1168m target against a 1000m cap.
+          # CPU is compressible: dropping the limit costs nothing and lets it
+          # burst into idle cycles. The request is what guarantees its floor.
           resources:
             requests:
-              cpu: "1"
-              memory: 256Mi
+              cpu: 500m
+              memory: 128Mi
             limits:
-              cpu: "1"
               memory: 256Mi
           volumeMounts:
             - name: data

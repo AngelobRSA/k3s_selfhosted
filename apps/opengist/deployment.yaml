@@ -32,12 +32,14 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /opengist
+          # Sized from Goldilocks/VPA, 18d of samples (2026-08-09).
+          # cpu limit dropped (compressible; never throttled, but the ceiling
+          # bought nothing). Memory request raised to the measured 105Mi.
           resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
+              cpu: 25m
+              memory: 128Mi
             limits:
-              cpu: "1"
               memory: 256Mi
       volumes:
         - name: data

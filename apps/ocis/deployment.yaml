@@ -100,10 +100,13 @@ spec:
               port: 9200
             initialDelaySeconds: 15
             periodSeconds: 10
+          # Sized from Goldilocks/VPA, 18d of samples (2026-08-09).
+          # Over-requested: VPA measured 237Mi against a 512Mi request, and CPU
+          # never left the recommender's 15m floor. Limit left generous.
           resources:
             requests:
-              cpu: 200m
-              memory: 512Mi
+              cpu: 25m
+              memory: 256Mi
             limits:
               memory: 2Gi
       volumes:

@@ -25,10 +25,13 @@ spec:
   values:
     replicaCount: 1
 
+    # Sized from Goldilocks/VPA, 18d (2026-08-09). Measured 422Mi (upper bound
+    # 450Mi) against a 256Mi request — a vector DB's mmap'd index grows with
+    # the collection, so under-requesting it understates real node pressure.
     resources:
       requests:
-        cpu: 100m
-        memory: 256Mi
+        cpu: 25m
+        memory: 512Mi
       limits:
         memory: 1Gi
 
