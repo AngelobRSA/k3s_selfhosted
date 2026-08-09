@@ -34,9 +34,11 @@ spec:
       # which Longhorn mirrors onto the nodes.longhorn.io CR automatically.
       #
       # Safe to make this hard: every StorageClass here is 2 replicas (or 1),
-      # and the nvme-tagged disks live in 3 distinct zones — node01m910,
-      # node02m910, node03m920 — so there is one spare zone of slack.
-      # Consequence to know before maintenance: with 2 of those 3 hosts down, a
+      # and the nvme-tagged disks live in 4 distinct zones — node01m910,
+      # node02m910, node03m920, node05m920 — so there are two spare zones.
+      # (kmaster04's entry was removed 2026-08-09: its USB enclosure moved to
+      # node05, leaving a stale disk pointed at the OS root.)
+      # Consequence to know before maintenance: with 3 of those 4 hosts down, a
       # rebuild will refuse to schedule rather than double up. Degraded and
       # honest, instead of quietly co-located.
       replicaZoneSoftAntiAffinity: false

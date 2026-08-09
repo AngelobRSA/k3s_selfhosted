@@ -146,14 +146,18 @@ metadata:
     kustomize.toolkit.fluxcd.io/prune: disabled
     kustomize.toolkit.fluxcd.io/ssa: merge
 ---
-# The standalone `proxmox` host (.110) — also runs vyosGateway, so losing this
-# zone takes LAN DNS/gateway with it. kmaster05 is etcd-only, no Longhorn disk.
+# node05m920 (.72) — joined the Proxmox cluster 2026-08-08; kmaster05 was
+# migrated here off the standalone `proxmox` host (.110) shortly after.
+# Carries an internal PCIe SM961 1TB passed through as virtio1 and registered
+# as Longhorn disk `longhorn-nvme1024` (tag `nvme`) — this is the 4th NVMe zone.
+# Unlike the USB enclosures on node03/04, this one is internal PCIe, so it is
+# not exposed to the late-enumeration autostart hazard.
 apiVersion: v1
 kind: Node
 metadata:
   name: kmaster05
   labels:
-    topology.kubernetes.io/zone: proxmox
+    topology.kubernetes.io/zone: node05m920
   annotations:
     kustomize.toolkit.fluxcd.io/prune: disabled
     kustomize.toolkit.fluxcd.io/ssa: merge
