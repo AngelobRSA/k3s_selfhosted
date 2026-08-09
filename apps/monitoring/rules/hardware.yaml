@@ -84,6 +84,41 @@ spec:
               Available spare {{ $value }}% is below the drive's own threshold.
               The drive is out of remap capacity — replace it.
 
+        # Added 2026-08-09. node02 hard-hung with its SSD stepping 59 -> 62C ten
+        # seconds beforehand, and NO rule watched drive temperature: the thermal
+        # group below is deliberately scoped to CPU sensors only. It ran 43C
+        # after a failing-bearing fan was replaced.
+        #
+        # Thresholds respect the existing "no noise" stance that NVMe here
+        # legitimately reaches 70C+ under load, so this targets *stuck hot*
+        # rather than *working hard* — 30m at 65C, or 10m at 75C. Current fleet
+        # idle is 25-43C, except node03's USB-enclosed Longhorn disk at 54C
+        # (enclosures trap heat; it is the one to watch).
+        - alert: DriveTemperatureWarning
+          expr: smartctl_device_temperature{temperature_type="current"} >= 65
+          for: 30m
+          labels:
+            severity: warning
+            component: thermal
+          annotations:
+            summary: "Drive {{ $labels.nodename }}/{{ $labels.device }} at {{ $value }}°C for 30m"
+            description: >-
+              Sustained high drive temperature. Under load this can be normal;
+              held for 30m it suggests airflow — check the fan and dust before
+              it becomes a thermal hang.
+
+        - alert: DriveTemperatureCritical
+          expr: smartctl_device_temperature{temperature_type="current"} >= 75
+          for: 10m
+          labels:
+            severity: critical
+            component: thermal
+          annotations:
+            summary: "Drive {{ $labels.nodename }}/{{ $labels.device }} at {{ $value }}°C"
+            description: >-
+              Drive is close to throttling or shutdown. NVMe controllers
+              self-throttle around 80°C and the host may hang before that.
+
         - alert: SmartWearoutHigh
           expr: smartctl_device_percentage_used > 90
           for: 1h
