@@ -233,3 +233,44 @@ spec:
               Temperature has been at or above the manufacturer's critical
               threshold for 5m. Expect throttling then shutdown. Check fans and
               dust.
+
+    # ------------------------------------------------------------------
+    # Network. Added 2026-08-09 after node05 vanished for ~6h: the Intel
+    # I219-LM's TX unit wedged and logged 10,335 "Detected Hardware Unit
+    # Hang" lines while the OS stayed perfectly alive. Nothing noticed,
+    # because from Prometheus's side the host simply stopped being scraped
+    # and `ProxmoxHostDown` reads as "power/NIC" — indistinguishable from a
+    # dead box. node03 has 3,384 of these and node04 has 97, all silent.
+    # ------------------------------------------------------------------
+    - name: bijouxlabs.network
+      rules:
+        # The e1000e hang does not increment errors on the *wedged* host (it
+        # can't report anything). Catch it from the surviving side instead:
+        # a host that stops being scraped while its VMs' k8s nodes also go
+        # away is a host-level network loss.
+        - alert: HostNetworkTransmitErrors
+          expr: increase(node_network_transmit_errs_total{job="proxmox-node-exporter", device!~"lo|veth.*|tap.*|fwbr.*|fwln.*|fwpr.*"}[15m]) > 0
+          for: 0m
+          labels:
+            severity: warning
+            component: network
+          annotations:
+            summary: "TX errors on {{ $labels.nodename }} {{ $labels.device }}"
+            description: >-
+              {{ $value }} transmit errors in 15m. On the m920/g4800 hosts this
+              is the Intel I219-LM (8086:15bb) e1000e "Hardware Unit Hang"
+              signature — the NIC's TX unit wedges while the OS stays up, so the
+              host looks powered-on with link lights but is unreachable.
+              Mitigation: ethtool -K <dev> tso off gso off.
+
+        - alert: HostNetworkCarrierFlapping
+          expr: changes(node_network_carrier_changes_total{job="proxmox-node-exporter", device!~"lo|veth.*|tap.*|fwbr.*|fwln.*|fwpr.*"}[30m]) > 4
+          for: 0m
+          labels:
+            severity: warning
+            component: network
+          annotations:
+            summary: "Link flapping on {{ $labels.nodename }} {{ $labels.device }}"
+            description: >-
+              Carrier changed {{ $value }} times in 30m. Suspect cable, switch
+              port, or a NIC resetting itself out of a hang.

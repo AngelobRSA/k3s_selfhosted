@@ -63,5 +63,20 @@ spec:
       reclaimPolicy: Delete
       defaultFsType: ext4
 
+    # Longhorn exported nothing to Prometheus until 2026-08-09 — there was no
+    # ServiceMonitor in longhorn-system at all, so `longhorn_volume_robustness`
+    # had zero series. That is why "nothing alerts on degraded volumes": the
+    # metric did not exist to alert on, and 7 volumes went faulted during the
+    # node02 outage with no signal.
+    #
+    # The `release` label is required: the Prometheus CR selects ServiceMonitors
+    # with `serviceMonitorSelector: matchLabels: {release: kube-prometheus-stack}`.
+    # Without it the ServiceMonitor is created and silently ignored.
+    metrics:
+      serviceMonitor:
+        enabled: true
+        additionalLabels:
+          release: kube-prometheus-stack
+
 
 

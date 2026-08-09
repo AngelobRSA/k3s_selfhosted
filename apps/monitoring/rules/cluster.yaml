@@ -1,0 +1,157 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: bijouxlabs-cluster
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    # ------------------------------------------------------------------
+    # Longhorn. Added 2026-08-09. Until now Longhorn exported NOTHING to
+    # Prometheus — there was no ServiceMonitor in longhorn-system, so
+    # `longhorn_volume_robustness` had zero series and no rule could have
+    # fired. Enabled via `metrics.serviceMonitor` in
+    # cluster/longhorn/helmrelease.yaml.
+    #
+    # robustness: 0=unknown 1=healthy 2=degraded 3=faulted
+    # ------------------------------------------------------------------
+    - name: bijouxlabs.longhorn
+      rules:
+        - alert: LonghornVolumeFaulted
+          expr: longhorn_volume_robustness == 3
+          for: 1m
+          labels:
+            severity: critical
+            component: storage
+          annotations:
+            summary: "Longhorn volume {{ $labels.volume }} is FAULTED"
+            description: >-
+              {{ $labels.volume }} has no usable replica and cannot serve I/O.
+              Any pod using it is down or will hang. If this followed a node
+              loss the data is probably intact and returns with the node —
+              check before assuming loss. Runbook:
+              docs/runbooks/reference_longhorn_b2_restore.md
+
+        - alert: LonghornVolumeDegraded
+          expr: longhorn_volume_robustness == 2
+          for: 15m
+          labels:
+            severity: warning
+            component: storage
+          annotations:
+            summary: "Longhorn volume {{ $labels.volume }} degraded for 15m"
+            description: >-
+              Running on fewer replicas than requested. 15m of grace is
+              deliberate: a node reboot degrades volumes briefly and they
+              rebuild on their own. Still degraded after 15m means the rebuild
+              cannot place a replica — with replicaZoneSoftAntiAffinity=false
+              that usually means too few distinct zones are available.
+
+        # The failure mode that actually bit us: a volume spec'd at N replicas
+        # that has silently been running on fewer. immich-library was "2
+        # replicas" but had 1 when kmaster04's disk died.
+        - alert: LonghornVolumeReplicaShortfall
+          expr: longhorn_volume_actual_size_bytes > 0 and on(volume) (longhorn_volume_robustness == 1) and on(volume) (count by (volume) (longhorn_replica_actual_size_bytes) < 2)
+          for: 30m
+          labels:
+            severity: warning
+            component: storage
+          annotations:
+            summary: "Longhorn volume {{ $labels.volume }} has only one replica"
+            description: >-
+              Reporting healthy but backed by a single replica, so it is one
+              disk or one host away from being unrecoverable. `healthy` means
+              "replicas agree", not "data is safe".
+
+        - alert: LonghornNodeStorageLow
+          expr: (longhorn_node_storage_usage_bytes / longhorn_node_storage_capacity_bytes) > 0.85
+          for: 30m
+          labels:
+            severity: warning
+            component: storage
+          annotations:
+            summary: "Longhorn storage {{ $value | printf \"%.0f\" }}% used on {{ $labels.node }}"
+            description: >-
+              Above 85%. Longhorn needs free space to rebuild replicas; running
+              out means a node loss cannot be recovered from.
+
+    # ------------------------------------------------------------------
+    # Node health. KubeNodeNotReady ships as `warning` in kube-prometheus-
+    # stack, which is why kmaster02 sat NotReady for ~6h on 2026-08-05 with
+    # zero pages. These are deliberately louder.
+    # ------------------------------------------------------------------
+    - name: bijouxlabs.nodes
+      rules:
+        - alert: K8sNodeNotReadyCritical
+          expr: kube_node_status_condition{condition="Ready", status="true"} == 0
+          for: 10m
+          labels:
+            severity: critical
+            component: node
+          annotations:
+            summary: "Node {{ $labels.node }} NotReady for 10m"
+            description: >-
+              Deliberately critical, overriding the upstream warning-level
+              KubeNodeNotReady. If this is a master, etcd quorum is degraded:
+              5 members tolerate only 2 losses.
+
+        # Nothing detected the silent VM resets on kmaster02/node04 because
+        # the node came back before anyone looked.
+        - alert: K8sNodeUnexpectedReboot
+          expr: changes(node_boot_time_seconds{job="node-exporter"}[1h]) > 0
+          for: 0m
+          labels:
+            severity: warning
+            component: node
+          annotations:
+            summary: "Node {{ $labels.instance }} rebooted in the last hour"
+            description: >-
+              An unplanned reboot is a hardware warning. Both kmaster02 and
+              node04 have open root-cause investigations for exactly this.
+
+        - alert: EtcdQuorumAtRisk
+          expr: count(kube_node_status_condition{condition="Ready", status="true"} == 1 and on(node) kube_node_role{role="control-plane"}) < 4
+          for: 5m
+          labels:
+            severity: critical
+            component: node
+          annotations:
+            summary: "Only {{ $value }} of 5 control-plane nodes Ready"
+            description: >-
+              etcd has 5 members and needs 3 for quorum. At 3 Ready there is
+              ZERO slack — one more loss takes the API down entirely. Do not
+              reboot or drain anything until this clears.
+
+    # ------------------------------------------------------------------
+    # Watching the watcher. On 2026-08-09 Prometheus itself went down with
+    # node02 (single-replica volume), so nothing could report the outage.
+    # Fixed by moving it to 2 replicas, but the general problem stands:
+    # in-cluster monitoring cannot alert on its own death.
+    # ------------------------------------------------------------------
+    - name: bijouxlabs.selfmonitoring
+      rules:
+        - alert: AlertmanagerNotificationsFailing
+          expr: increase(alertmanager_notifications_failed_total[15m]) > 0
+          for: 0m
+          labels:
+            severity: critical
+            component: monitoring
+          annotations:
+            summary: "Alertmanager failing to deliver via {{ $labels.integration }}"
+            description: >-
+              Alerts are firing but not reaching ntfy. This is the silent
+              failure that hid problems before the 2026-08-08 ntfy routing fix.
+
+        - alert: PrometheusTargetsDown
+          expr: count by (job) (up == 0) > 0
+          for: 15m
+          labels:
+            severity: warning
+            component: monitoring
+          annotations:
+            summary: "{{ $value }} target(s) down in job {{ $labels.job }}"
+            description: >-
+              A scrape target has been unreachable for 15m. Catches exporters
+              that die quietly — node03's smartctl_exporter was down and
+              unnoticed until a manual audit on 2026-08-09.

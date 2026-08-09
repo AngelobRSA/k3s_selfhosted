@@ -6,3 +6,4 @@ resources:
   - dashboards/smartctl.yaml
   - dashboards/hardware.yaml
   - rules/hardware.yaml
+  - rules/cluster.yaml
