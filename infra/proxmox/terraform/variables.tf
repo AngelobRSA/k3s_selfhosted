@@ -34,21 +34,54 @@ variable "masters" {
     memory        = number # MiB
     cores         = number
   }))
+  # Measured 2026-08-10 (kubectl top / free -m on hosts). Masters run hot on
+  # memory; the two TF-managed ones sit on the two most constrained hosts.
+  #
+  #   NODE        ALLOC     USED    MEM%   HOST         HOST RAM  COMMITTED
+  #   kmaster03   ~3.6G    2996Mi    82%   node03m920     31.1G       —
+  #   kmaster04    4096M   2603Mi    71%   node04g4800    31.1G     36.0G (!)
+  #   kmaster05    4096M   2502Mi    68%   node05m920      7.6G      4.0G
+  #   kmaster02    6144M   2454Mi    51%   node02m910     31.1G     28.0G
+  #
+  # node04g4800 is ALREADY overcommitted (~5G): kworker04/05/07/09 hold 8192M
+  # each but use only ~2.0-2.6G. Raising kmaster04 realistically means shrinking
+  # those workers first — they are hand-built, NOT in var.workers, so that is a
+  # `qm set` on the host, not a TF change.
+  #
+  # ⚠️ DRIFT — do not silently "fix" in this block:
+  #   - kmaster05 `node` reads "proxmox" but the VM actually runs on node05m920
+  #     (moved 2026-08-09). Changing node_name on an existing VM can force
+  #     RECREATION — needs a state mv / import, not an edit.
+  #   - kmaster05 `memory` reads 3072 but the live VM is 4096.
+  #   - The "12GB total, VyOS uses 4GB" comment describes the OLD host and is
+  #     stale; node05m920 has 7.6G total with ~2.1G available.
   default = {
     kmaster04 = {
       node          = "node04g4800"
       vmid          = 405
       template_vmid = 9004
       ip            = "192.168.0.12/24"
-      memory        = 4096
-      cores         = 2
+
+      # DEFERRED 2026-08-10 — choose memory/cores for the two TF-managed masters.
+      # Constraints to weigh:
+      #   - kmaster04 host node04g4800: 31.1G RAM / 6 cores, already ~36G
+      #     committed. Any increase here is only safe if you also shrink the
+      #     four 8192M workers on that host (they use ~2.0-2.6G each).
+      #   - kmaster05 host node05m920: 7.6G RAM / 6 cores, ~2.1G available.
+      #     Leave the hypervisor ~1.5-2G; that caps kmaster05 near 5120M.
+      #   - An etcd voter's steady state here is ~2.5G; the 3.2G "peak" seen on
+      #     kmaster02 was k3s looping on a corrupt DB, not normal load.
+      #   - cores: hosts are 6-core; every master currently gets 2. etcd is more
+      #     fsync/latency-bound than CPU-bound, so more cores rarely helps it.
+      memory = 4096
+      cores  = 2
     }
     kmaster05 = {
-      node          = "proxmox"
+      node          = "proxmox" # ⚠️ drift: really on node05m920 (see note above)
       vmid          = 501
       template_vmid = 9010
       ip            = "192.168.0.32/24"
-      memory        = 3072 # tight host (12GB total, VyOS uses 4GB)
+      memory        = 3072 # ⚠️ drift: live VM is 4096
       cores         = 2
     }
   }

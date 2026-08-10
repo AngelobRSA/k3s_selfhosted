@@ -135,13 +135,44 @@ spec:
             memory: 4Gi
 
     alertmanager:
+      alertmanagerSpec:
+        # Mounts Secret/alertmanager-deadman at
+        # /etc/alertmanager/secrets/alertmanager-deadman/<key>.
+        # Holds the external heartbeat URL, which is a credential: anyone with
+        # it can keep the check green and suppress the very alert it exists to
+        # raise. That is why it is a mounted secret + `url_file` rather than an
+        # inline URL — this repo is public, and `alertmanager.config` is
+        # rendered verbatim into a Secret AND visible on the HelmRelease object.
+        secrets:
+          - alertmanager-deadman
+
       config:
         global:
           resolve_timeout: 5m
 
         receivers:
-          # Discard sink. Only Watchdog should ever land here.
+          # Discard sink. Nothing should land here now that Watchdog is routed
+          # to `deadman`; kept as an explicit target for future silencing.
           - name: "null"
+
+          # 🔴 THE DEAD-MAN'S SWITCH.
+          #
+          # Watchdog fires permanently by design. Routing it to "null" (as we
+          # did until 2026-08-10) makes it useless: a heartbeat nobody outside
+          # the cluster observes cannot detect the cluster dying. ntfy AND
+          # uptime-kuma are both in-cluster, so a full-cluster loss previously
+          # paged NOBODY — exactly what happened on 2026-08-09.
+          #
+          # The logic is INVERTED vs every other receiver here: we are not
+          # notifying on a problem, we are proving liveness. The external
+          # service alerts when these pings STOP.
+          #
+          # send_resolved: false — Watchdog never resolves, and a "resolved"
+          # POST would look identical to a heartbeat to the ping endpoint.
+          - name: deadman
+            webhook_configs:
+              - url_file: /etc/alertmanager/secrets/alertmanager-deadman/url
+                send_resolved: false
 
           # ntfy renders Alertmanager's payload server-side (requires ntfy
           # >= v2.14.0; we run v2.26.3). No bridge or translator container.
@@ -192,10 +223,40 @@ spec:
           receiver: ntfy
           routes:
             # Watchdog fires constantly by design — it is the dead-man's
-            # switch, not an alert. Never notify on it.
+            # switch, not an alert. Never notify on it IN-CLUSTER; instead
+            # ping an EXTERNAL heartbeat endpoint so its silence is the signal.
+            #
+            # This route MUST stay first: matching stops at the first hit, and
+            # the `severity = critical` safety net at the bottom would otherwise
+            # spam ntfy with a permanently-firing alert.
+            #
+            # TIMING — ping every 5m; the external check alerts after 30m of
+            # silence (period 15m + grace 15m). Chosen 2026-08-10.
+            #
+            # How these combine: Alertmanager sends immediately (group_wait 0s),
+            # then re-sends the still-firing Watchdog every repeat_interval,
+            # never more often than group_interval. Effective ping rate is
+            # max(group_interval, repeat_interval) = 5m.
+            #
+            # Why 5m and not 1m: a 15m check period gives 3x headroom over the
+            # ping rate, so a single dropped ping or a brief Alertmanager
+            # restart cannot trip a false alarm. At a 1m ping rate the tolerance
+            # window is too tight and 03:00 false alarms teach you to ignore the
+            # one alert that must never be ignored.
+            #
+            # Why not slower: the 2026-08-09 outage ran ~13h undetected. 30m
+            # worst-case detection is a ~26x improvement while keeping the
+            # signal trustworthy.
+            #
+            # ⚠️ If you change repeat_interval, change the check's period to
+            # match (keep period >= 3x ping rate). Alertmanager also warns when
+            # repeat_interval < group_interval — keep them equal.
             - matchers:
                 - alertname = "Watchdog"
-              receiver: "null"
+              receiver: deadman
+              group_wait: 0s
+              group_interval: 5m
+              repeat_interval: 5m
 
             - matchers:
                 - alertname = "ProxmoxHostDown"
