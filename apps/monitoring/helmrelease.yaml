@@ -136,6 +136,16 @@ spec:
 
     alertmanager:
       alertmanagerSpec:
+        # HA 2026-08-10. Alertmanager clusters natively over gossip and
+        # DEDUPLICATES notifications across replicas, so 2 pods do NOT mean 2
+        # pings to the dead-man's switch or 2 ntfy messages.
+        # This became load-bearing once the external dead-man's switch went
+        # live: a single Alertmanager meant the thing that proves the cluster
+        # is alive was itself a single point of failure.
+        # Key verified against kube-prometheus-stack 67.11.0 values
+        # (alertmanagerSpec.replicas).
+        replicas: 2
+
         # Mounts Secret/alertmanager-deadman at
         # /etc/alertmanager/secrets/alertmanager-deadman/<key>.
         # Holds the external heartbeat URL, which is a credential: anyone with

@@ -29,3 +29,14 @@ spec:
     extraArgs:
       - --dns01-recursive-nameservers=8.8.8.8:53,1.1.1.1:53
       - --dns01-recursive-nameservers-only
+
+    # HA 2026-08-10. All three ran at 1 replica; each uses leader election, so
+    # a second pod is a warm standby rather than active-active — it removes the
+    # window where a node loss stalls certificate issuance/renewal.
+    # Key names verified against the 1.17.x chart values (replicaCount at the
+    # top level, and separately under webhook/cainjector) — NOT `replicas`.
+    replicaCount: 2
+    webhook:
+      replicaCount: 2
+    cainjector:
+      replicaCount: 2
