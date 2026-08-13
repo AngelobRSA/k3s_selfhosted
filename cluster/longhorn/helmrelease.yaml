@@ -45,7 +45,20 @@ spec:
       allowVolumeCreationWithDegradedAvailability: false
       disableRevisionCounter: "true"
       defaultLonghornStaticDataCompliance: false
-      orphanAutoDeletion: true
+      # ⚠️ RENAMED IN LONGHORN 1.9 — was `orphanAutoDeletion: true` here until
+      # 2026-08-10. That key stopped existing, the chart silently dropped it
+      # (same class as [[reference_helm_silent_unknown_values]]), and the live
+      # setting `orphan-resource-auto-deletion` sat at "" — meaning NOTHING was
+      # ever reaped. By 2026-08-10 that had accumulated 49 orphaned replica
+      # dirs / ~142 GB, including 105 GB on kmaster02 alone (which had zero
+      # live replicas). The phantom usage also skewed Longhorn's scheduler,
+      # which scores disks by free space — kmaster02 looked as full as
+      # kmaster01, so rebuilds kept landing elsewhere.
+      #
+      # Value is a semicolon-separated list, NOT a bool. Verified against the
+      # admission webhook with `kubectl patch --dry-run=server`: a bogus value
+      # is rejected, so this one is confirmed valid rather than assumed.
+      orphanResourceAutoDeletion: "replica-data;instance"
       nodeDownPodDeletionPolicy: delete-both-statefulset-and-deployment-pod
       
     longhornManager:
