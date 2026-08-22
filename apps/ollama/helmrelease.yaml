@@ -24,7 +24,7 @@ spec:
   interval: 30m
   timeout: 10m
   values:
-    # TODO(human): define the hardening for the ollama container to clear radar's
+    # TODO (parked): define the hardening for the ollama container to clear radar's
     # privilegeEscalation (danger) + runAsRoot/readOnlyRootFs warnings.
     # The otwld/ollama chart wires these two keys straight into the pod:
     #   podSecurityContext:   -> pod-level (fsGroup, runAsUser/Group, runAsNonRoot, seccompProfile)
