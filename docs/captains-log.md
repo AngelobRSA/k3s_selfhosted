@@ -306,7 +306,8 @@ can pass while RAM is still marginal under real load, so single-stick soak
 testing is the stronger signal.
 
 **Why nobody noticed:** the cluster self-heals every time, and
-`HostUnexpectedReboot` notified nobody because ntfy has **zero subscribers**.
+`HostUnexpectedReboot` notified nobody — at the time the ntfy topic had **no
+subscribers**. (Subscribed since; delivery verified working 2026-08-22.)
 
 ---
 
@@ -420,7 +421,10 @@ The durable lessons, stripped of story.
 18. **Do not host your monitoring on the thing it monitors.** Prometheus ran
     single-replica on kmaster02 and died with the outage it should have reported.
 19. **An alert nobody receives is not an alert.** `HostUnexpectedReboot` fired
-    correctly for months into an ntfy topic with zero subscribers.
+    correctly for months into an ntfy topic with no subscribers. Resolved — but
+    the lesson generalises: verify the *delivery* leg, not just the rule.
+    `alertmanager_notifications_total{integration="webhook"}` and a
+    `?poll=1&since=` poll against the ntfy topic are the two checks.
 20. **One global threshold across heterogeneous hardware trains you to ignore
     alerts.** 70°C is unremarkable for node04's 65 W CPU and genuinely warm for a
     35 W T-series.
@@ -436,7 +440,6 @@ The durable lessons, stripped of story.
 - 🔴 **node04 solo abrupt resets** — memtest86+ passes, then single-DIMM bisect.
 - 🔴 **No alert on degraded Longhorn volumes** — a volume can sit at 1 replica silently.
 - 🟡 **Per-host CPU temperature thresholds** — node04 cries wolf at its idle temp.
-- 🟡 **ntfy has zero subscribers** — every critical alert currently goes nowhere.
 - 🟡 **node05's UNITEK enclosure** still negotiating USB 2.0 — needs a cable swap.
 - 🟡 **`immich-db` has no WAL archiving** — no PITR, and a diverged replica cannot
   self-heal.
