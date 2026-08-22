@@ -44,6 +44,62 @@ GitOps-managed in `cluster/topology/nodes.yaml`.
 
 ---
 
+## Stardate 2026-08-22 — "The Alerts That Never Were"
+
+**Three separate alert rules, written months apart, were all incapable of
+firing. One of them was the alert for the failure that has cost us the most.**
+
+It started as a request for a degraded-volume alert and turned into an audit.
+`LonghornVolumeReplicaShortfall` had existed since 2026-08-09, its comment
+correctly explaining that Longhorn calls a volume `healthy` when its replicas
+*agree*, not when there are enough of them. Its expression referenced
+`longhorn_replica_actual_size_bytes`. That metric does not exist — this
+longhorn-manager exports only `longhorn_replica_info` and
+`longhorn_replica_state`. PromQL does not error on an unknown metric; it returns
+the empty set. So the rule reported all-clear for the entire period during which
+immich-library and both vaultwarden volumes sat single-replica.
+
+The same day, `HostManagementPlaneWedged` was found joining against
+`kube_node_labels`, which kube-state-metrics has not exported by default since
+v2 — 0 series, silently. And the recording rule feeding it would have died with
+`found duplicate series for the match group` on the next KSM rollout, because
+during a rollout two exporter pods are scraped at once and `group_left` gets two
+matches per node. It was hidden only because the *old* KSM pod predated the
+allowlist and emitted nothing.
+
+**Then the premise itself turned out to be wrong.** Asked why every StorageClass
+was 2 replicas when Longhorn defaults to 3, the assumed answer was capacity. It
+was not. Capacity was 3.6% of 2.3 TiB. The real constraint was zones: with hard
+zone anti-affinity and only three nvme zones, a 3-replica volume consumed all of
+them, leaving nowhere to rebuild during maintenance. **kmaster05 became the
+fourth zone on 2026-08-09 and nobody revisited the policy.** Four zones is now a
+hard ceiling.
+
+Underneath that sat `longhorn-single`, declaring one replica, holding
+homeassistant-config, paperless-data, karakeep-data, qdrant, copyparty and
+ollama. All six had been hand-bumped to 2 replicas live on 2026-08-09; the class
+was never updated. Any recreation of those PVCs would have come back
+single-replica and been reported healthy forever — the immich-library trap,
+armed and waiting on six volumes.
+
+And Prometheus's 50Gi volume was holding **100.5 GiB**: 7.76 GiB of live data
+and 92.8 GiB in two `backup-daily` snapshots pinning TSDB blocks its own 14-day
+retention had already expired. Longhorn snapshots are copy-on-write, so a
+snapshotted volume can only ever grow. It was also shipping disposable
+time-series to B2 nightly over a 4.8 MB/s link.
+
+**Cleared:** husks deleted, `longhorn-single` → 2, default → 3, a
+`longhorn-ephemeral` class for volumes that need availability but not
+durability, and **199.6 GiB reclaimed** (284.7 → 85.1 GiB).
+
+The one genuinely good sign: `HostManagementPlaneWedged` was verified by pointing
+it at node04, which was wedged at that moment and had been for five days. It
+fired at 13:25:17 and the notification landed. An alert proven against a real
+failure is worth more than three that were only ever proven against a text
+editor.
+
+---
+
 ## Stardate 2026-08-17 — "The Ghost Ship" 🔴 OPEN
 
 **node04g4800 stopped answering at 04:52:55 and never came back — while running perfectly.**
@@ -425,10 +481,19 @@ The durable lessons, stripped of story.
     the lesson generalises: verify the *delivery* leg, not just the rule.
     `alertmanager_notifications_total{integration="webhook"}` and a
     `?poll=1&since=` poll against the ntfy topic are the two checks.
-20. **One global threshold across heterogeneous hardware trains you to ignore
+20. **A PromQL rule naming a metric that does not exist returns the empty set,
+    not an error** — identical to "all clear". Three rules here were dead for
+    months, including the one guarding the failure that cost us the most.
+    **Verify every new rule against a known-true positive**, and check the
+    metric exists before trusting the expression.
+21. **Absence and zero are different, and only one of them alerts.**
+    `sum by (x) (m{state="running"})` keeps a series at zero;
+    `count by (x) (m == 1)` drops the row, making the worst case look like
+    "no such object".
+22. **One global threshold across heterogeneous hardware trains you to ignore
     alerts.** 70°C is unremarkable for node04's 65 W CPU and genuinely warm for a
     35 W T-series.
-21. **Alert descriptions are triage instructions and must not over-claim.**
+23. **Alert descriptions are triage instructions and must not over-claim.**
     `ProxmoxHostDown` said "every VM on this host is down" and was wrong for 29
     hours straight.
 
@@ -438,8 +503,9 @@ The durable lessons, stripped of story.
 
 - 🔴 **node04 management plane wedged** (2026-08-17) — needs console + `dmesg`.
 - 🔴 **node04 solo abrupt resets** — memtest86+ passes, then single-DIMM bisect.
-- 🔴 **No alert on degraded Longhorn volumes** — a volume can sit at 1 replica silently.
 - 🟡 **Per-host CPU temperature thresholds** — node04 cries wolf at its idle temp.
 - 🟡 **node05's UNITEK enclosure** still negotiating USB 2.0 — needs a cable swap.
+- 🔴 **`local-path` is the cluster default StorageClass**, not `longhorn` — a PVC with no
+  explicit class gets node-local storage, no replicas, no backups. `opengist-data` is on it.
 - 🟡 **`immich-db` has no WAL archiving** — no PITR, and a diverged replica cannot
   self-heal.
