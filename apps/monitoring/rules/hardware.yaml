@@ -40,16 +40,21 @@ spec:
         # Ready k8s nodes per Proxmox host, keyed on `nodename` to join against
         # the proxmox-node-exporter `up` series. Zone label is GitOps-managed in
         # cluster/topology/nodes.yaml.
+        # ⚠️ The `max by (node, ...)` wrappers are NOT cosmetic. During a
+        # kube-state-metrics rollout two pods are scraped at once, so every
+        # series exists twice. Unaggregated, the left side double-counts and
+        # the right side gives group_left two matches per node — which is a
+        # hard "duplicate series for the match group" error, silently killing
+        # this rule for the whole rollout window.
         - record: bijouxlabs:ready_k8s_nodes_per_proxmox_host
           expr: |
             count by (nodename) (
-              label_replace(
-                kube_node_status_condition{condition="Ready", status="true"} == 1,
-                "nodename", "$1", "node", "(.*)"
+              max by (node) (
+                kube_node_status_condition{condition="Ready", status="true"} == 1
               )
               * on (node) group_left(nodename)
               label_replace(
-                kube_node_labels,
+                max by (node, label_topology_kubernetes_io_zone) (kube_node_labels),
                 "nodename", "$1", "label_topology_kubernetes_io_zone", "(.*)"
               )
             )
