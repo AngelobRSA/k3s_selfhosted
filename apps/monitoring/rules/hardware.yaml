@@ -7,10 +7,8 @@ metadata:
     release: kube-prometheus-stack
 spec:
   groups:
-    # ------------------------------------------------------------------
-    # Physical hosts (Proxmox). These fire on the hypervisors themselves,
-    # which is what the 2026-07-27 node04 outage needed and did not have.
-    # ------------------------------------------------------------------
+    # Physical Proxmox hosts. See docs/captains-log.md for the incidents
+    # these rules were derived from.
     - name: bijouxlabs.host
       rules:
         - alert: ProxmoxHostDown
@@ -22,12 +20,11 @@ spec:
           annotations:
             summary: "Proxmox host {{ $labels.nodename }} is unreachable"
             description: >-
-              node-exporter on {{ $labels.nodename }} ({{ $labels.instance }}) has
-              been unreachable for 5m. Every VM on this host is down. Check
-              physical power/NIC. Runbook: docs/runbooks/node04-triage.md
+              node-exporter on {{ $labels.nodename }} ({{ $labels.instance }})
+              has been unreachable for 5m. This does not by itself mean the VMs
+              are down — check HostManagementPlaneWedged before treating it as a
+              dead box. Runbook: docs/runbooks/node04-triage.md
 
-        # This is the rule that would have caught node04's 2026-07-26 crash
-        # 17 hours before it died for good.
         - alert: HostUnexpectedReboot
           expr: changes(node_boot_time_seconds{job="proxmox-node-exporter"}[15m]) > 0
           for: 0m
@@ -38,12 +35,47 @@ spec:
             summary: "Host {{ $labels.nodename }} rebooted unexpectedly"
             description: >-
               {{ $labels.nodename }} booted within the last 15m. If this was not
-              planned, treat it as a hardware warning
+              planned, treat it as a hardware warning.
 
-    # ------------------------------------------------------------------
-    # Disks. NVMe critical-warning and media errors only; no "disk is 80%
-    # full" style noise here.
-    # ------------------------------------------------------------------
+        # Ready k8s nodes per Proxmox host, keyed on `nodename` to join against
+        # the proxmox-node-exporter `up` series. Zone label is GitOps-managed in
+        # cluster/topology/nodes.yaml.
+        - record: bijouxlabs:ready_k8s_nodes_per_proxmox_host
+          expr: |
+            count by (nodename) (
+              label_replace(
+                kube_node_status_condition{condition="Ready", status="true"} == 1,
+                "nodename", "$1", "node", "(.*)"
+              )
+              * on (node) group_left(nodename)
+              label_replace(
+                kube_node_labels,
+                "nodename", "$1", "label_topology_kubernetes_io_zone", "(.*)"
+              )
+            )
+
+        # A host that stops answering while its VMs keep running is wedged, not
+        # dead, and must not be power-cycled blind.
+        - alert: HostManagementPlaneWedged
+          # Host's own exporter is unreachable, yet every k8s VM it hosts is
+          # still Ready. A genuinely dead box takes its VMs with it.
+          expr: |
+            up{job="proxmox-node-exporter"} == 0
+              and on (nodename)
+            bijouxlabs:ready_k8s_nodes_per_proxmox_host > 0
+          for: 10m
+          labels:
+            severity: critical
+            component: host
+          annotations:
+            summary: "{{ $labels.nodename }} is serving VMs but unreachable for admin"
+            description: >-
+              node-exporter on {{ $labels.nodename }} is down, but its VMs are
+              still Ready. The box is alive and running workloads — do not
+              power-cycle it. Get console access and capture dmesg before
+              rebooting. Runbook: docs/runbooks/node04-triage.md
+
+    # Disks. Drive failure and wearout only; capacity lives in the group below.
     - name: bijouxlabs.disk
       rules:
         - alert: SmartCriticalWarning
@@ -84,16 +116,8 @@ spec:
               Available spare {{ $value }}% is below the drive's own threshold.
               The drive is out of remap capacity — replace it.
 
-        # Added 2026-08-09. node02 hard-hung with its SSD stepping 59 -> 62C ten
-        # seconds beforehand, and NO rule watched drive temperature: the thermal
-        # group below is deliberately scoped to CPU sensors only. It ran 43C
-        # after a failing-bearing fan was replaced.
-        #
-        # Thresholds respect the existing "no noise" stance that NVMe here
-        # legitimately reaches 70C+ under load, so this targets *stuck hot*
-        # rather than *working hard* — 30m at 65C, or 10m at 75C. Current fleet
-        # idle is 25-43C, except node03's USB-enclosed Longhorn disk at 54C
-        # (enclosures trap heat; it is the one to watch).
+        # Targets "stuck hot" rather than "working hard": NVMe here legitimately
+        # reaches 70C+ under load, so the warning needs a long window.
         - alert: DriveTemperatureWarning
           expr: smartctl_device_temperature{temperature_type="current"} >= 65
           for: 30m
@@ -131,15 +155,10 @@ spec:
               Drive has consumed {{ $value }}% of its rated write endurance.
               Plan a replacement; not urgent.
 
-    # ------------------------------------------------------------------
-    # Capacity. Root filesystems only — /boot sits at a static 50-65% on
-    # every node and would be permanent noise, and tmpfs/fuse mounts are
-    # not real storage.
-    # ------------------------------------------------------------------
+    # Capacity. Root filesystems only — /boot is statically 50-65% everywhere
+    # and tmpfs/fuse mounts are not real storage.
     - name: bijouxlabs.capacity
       rules:
-        # Covers physical Proxmox hosts, k3s VM nodes, and the desktop once
-        # its scrape config lands — any node-exporter reporting a root fs.
         - alert: HostRootDiskSpaceLow
           expr: |
             100 * (
@@ -173,9 +192,7 @@ spec:
               OS disk above 90%. Imminent failure of kubelet/containerd on this
               node. Free space now.
 
-    # ------------------------------------------------------------------
-    # Memory (EDAC). Uncorrectable errors are never noise.
-    # ------------------------------------------------------------------
+    # Memory (EDAC). Only the ECC-capable hosts report these at all.
     - name: bijouxlabs.memory
       rules:
         - alert: MemoryUncorrectableErrors
@@ -203,19 +220,13 @@ spec:
               {{ $value }} correctable errors in 6h on {{ $labels.nodename }}.
               Corrected for now, but a rising rate predicts a DIMM failure.
 
-    # ------------------------------------------------------------------
-    # Thermals. Compared against the sensor's own critical threshold rather
-    # than a hardcoded number, so it self-tunes per chip.
-    # ------------------------------------------------------------------
+    # Thermals. Scoped to CPU package/core sensors: NVMe has its own rules
+    # above, and thermal_zone0 reads ambient and would never fire.
     - name: bijouxlabs.thermal
       rules:
-        # Scoped to CPU package/core sensors rather than every hwmon sensor.
-        # Deliberate:
-        #   - NVMe drives idle at ~48C here and legitimately reach 70C+ under
-        #     load without being in trouble. Alerting on them at 70 would be
-        #     pure noise; SmartCriticalWarning and HostTemperatureCritical
-        #     already cover genuine drive thermal failure.
-        #   - thermal_zone0 reads ~28C (ambient/ACPI) and would never fire.
+        # TODO: 70C is calibrated for the 35W T-series hosts. node04g4800 runs a
+        # 65W i5-8500 that idles at ~69C, so this fires on its normal operating
+        # temperature. Needs a per-host threshold.
         - alert: HostCPUTemperatureWarning
           expr: |
             max by (nodename, instance) (
@@ -234,11 +245,8 @@ spec:
               CPU temperature has been at or above 70°C for 5m. Not yet
               critical.
 
-        # Separate threshold for the desktop: a 5900X under gaming or compile
-        # load is expected to run hot, and k10temp reports Tctl, which carries
-        # a built-in offset (TjMax 95C). 80C is normal mid-session, so this
-        # uses a 15m window to catch "stuck hot" rather than "working hard".
-        # Raise to 85C if it still chatters during long sessions.
+        # The desktop's 5900X reports Tctl (TjMax 95C) and runs 80C legitimately
+        # under load, so this uses a long window to catch "stuck hot".
         - alert: DesktopCPUTemperatureWarning
           expr: |
             max by (nodename, instance) (
@@ -256,6 +264,7 @@ spec:
             description: >-
               Desktop CPU has held at or above 80°C for 15 minutes.
 
+        # Compared against each sensor's own critical threshold, so it self-tunes.
         - alert: HostTemperatureCritical
           expr: node_hwmon_temp_celsius >= on(instance, chip, sensor) node_hwmon_temp_crit_celsius
           for: 5m
@@ -269,20 +278,10 @@ spec:
               threshold for 5m. Expect throttling then shutdown. Check fans and
               dust.
 
-    # ------------------------------------------------------------------
-    # Network. Added 2026-08-09 after node05 vanished for ~6h: the Intel
-    # I219-LM's TX unit wedged and logged 10,335 "Detected Hardware Unit
-    # Hang" lines while the OS stayed perfectly alive. Nothing noticed,
-    # because from Prometheus's side the host simply stopped being scraped
-    # and `ProxmoxHostDown` reads as "power/NIC" — indistinguishable from a
-    # dead box. node03 has 3,384 of these and node04 has 97, all silent.
-    # ------------------------------------------------------------------
+    # Network. The I219-LM e1000e TX hang is silent on the wedged host itself,
+    # so these catch it from the surviving side.
     - name: bijouxlabs.network
       rules:
-        # The e1000e hang does not increment errors on the *wedged* host (it
-        # can't report anything). Catch it from the surviving side instead:
-        # a host that stops being scraped while its VMs' k8s nodes also go
-        # away is a host-level network loss.
         - alert: HostNetworkTransmitErrors
           expr: increase(node_network_transmit_errs_total{job="proxmox-node-exporter", device!~"lo|veth.*|tap.*|fwbr.*|fwln.*|fwpr.*"}[15m]) > 0
           for: 0m

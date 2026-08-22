@@ -46,6 +46,18 @@ spec:
     kubeProxy:
       enabled: false
 
+    # kube-state-metrics does NOT export node labels by default (KSM v2 dropped
+    # the behaviour), so `kube_node_labels` simply does not exist. The
+    # bijouxlabs:ready_k8s_nodes_per_proxmox_host recording rule joins on the
+    # zone label, so without this the rule — and HostManagementPlaneWedged —
+    # silently evaluate to nothing. Verified 2026-08-22: node04 was wedged and
+    # the expression returned 0 series.
+    #
+    # ⚠️ Subchart key, same trap as prometheus-node-exporter below.
+    kube-state-metrics:
+      metricLabelsAllowlist:
+        - nodes=[topology.kubernetes.io/zone]
+
     # Rewrite `instance` from the scrape address to the actual node name, so
     # alerts and dashboards say "kmaster01" instead of "192.168.0.154:9100".
     #
