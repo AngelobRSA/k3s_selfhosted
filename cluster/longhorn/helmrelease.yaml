@@ -25,7 +25,14 @@ spec:
   interval: 30m
   values:
     defaultSettings:
-      defaultReplicaCount: "2"
+      # 2 -> 3 on 2026-08-22. The 2-replica policy was a correct response to a
+      # THREE-zone cluster: with hard zone anti-affinity, a 3-replica volume
+      # consumed every zone, so taking one host down for maintenance left
+      # nowhere to rebuild and volumes sat degraded until it came back.
+      # node05m920 became the 4th nvme zone on 2026-08-09 and nobody revisited
+      # this. With 4 zones, 3 replicas leaves exactly one spare to rebuild into.
+      # Capacity was never the constraint (~18% of 2.3 TiB at 3 replicas).
+      defaultReplicaCount: "3"
       defaultDataLocality: best-effort
       # Node-level: two replicas may never share a k8s node.
       replicaSoftAntiAffinity: false
@@ -33,9 +40,11 @@ spec:
       # Zones come from `topology.kubernetes.io/zone` (see cluster/topology/),
       # which Longhorn mirrors onto the nodes.longhorn.io CR automatically.
       #
-      # Safe to make this hard: every StorageClass here is 2 replicas (or 1),
-      # and the nvme-tagged disks live in 4 distinct zones — node01m910,
-      # node02m910, node03m920, node05m920 — so there are two spare zones.
+      # Safe to make this hard: the nvme-tagged disks live in 4 distinct zones —
+      # node01m910, node02m910, node03m920, node05m920 — so a 3-replica volume
+      # leaves ONE spare zone to rebuild into, and a 2-replica volume leaves two.
+      # ⚠️ 4 zones is now the hard ceiling on replica count. Do not raise any
+      # StorageClass above 3 without adding a fifth nvme zone first.
       # (kmaster04's entry was removed 2026-08-09: its USB enclosure moved to
       # node05, leaving a stale disk pointed at the OS root.)
       # Consequence to know before maintenance: with 3 of those 4 hosts down, a
@@ -75,6 +84,14 @@ spec:
       defaultClass: false
       reclaimPolicy: Delete
       defaultFsType: ext4
+      # Explicit, not inherited. This is what actually sets numberOfReplicas on
+      # the `longhorn` StorageClass — NOT defaultReplicaCount above, which only
+      # applies to volumes created without an SC parameter. It happened to be 3
+      # already because 3 is the chart default; stating it makes the choice
+      # reviewable. ⚠️ The `longhorn` SC is rendered by longhorn-manager from
+      # the `longhorn-storageclass` ConfigMap, so it carries no Helm ownership
+      # annotations and cannot be managed by a plain manifest in this repo.
+      defaultClassReplicaCount: 3
 
     # Longhorn exported nothing to Prometheus until 2026-08-09 — there was no
     # ServiceMonitor in longhorn-system at all, so `longhorn_volume_robustness`

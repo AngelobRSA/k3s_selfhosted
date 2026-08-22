@@ -7,10 +7,20 @@ reclaimPolicy: Delete
 allowVolumeExpansion: true
 volumeBindingMode: Immediate
 parameters:
+  # Deliberately stays at 2 while `longhorn` moves to 3 (2026-08-22). This is
+  # the class for volumes that need AVAILABILITY but whose data is
+  # regenerable — Prometheus above all. Replicas buy two different things and
+  # they are worth separating: surviving a host loss (2 is enough) and durable
+  # data (3). Prometheus is 100 GiB of the heaviest write stream in the
+  # cluster and its TSDB can be rebuilt; paying a third synchronous copy over
+  # 1GbE buys durability nobody wants.
   numberOfReplicas: "2"
-  # Pin replicas to the dedicated NVMe disks (tagged `nvme`) on
-  # kmaster01/02/03 — the only nodes with large fast storage. Keeps replicas
-  # off the small worker OS disks entirely.
+  # Pin replicas to the dedicated NVMe disks (tagged `nvme`).
+  # ⚠️ STALE COMMENT CORRECTED 2026-08-22: this used to say "kmaster01/02/03 —
+  # the only nodes with large fast storage". kmaster05 gained a PCIe SM961 on
+  # 2026-08-09 and is the 4th nvme zone. Note also that EVERY `default-disk` in
+  # the cluster is now allowScheduling:false, so this selector is currently a
+  # no-op — it is kept as a guard in case a worker disk is ever re-enabled.
   diskSelector: "nvme"
   staleReplicaTimeout: "30"
   dataLocality: "best-effort"
