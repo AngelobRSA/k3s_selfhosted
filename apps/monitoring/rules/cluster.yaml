@@ -51,14 +51,54 @@ spec:
         # The failure mode that actually bit us: a volume spec'd at N replicas
         # that has silently been running on fewer. immich-library was "2
         # replicas" but had 1 when kmaster04's disk died.
+        # Running replicas per volume. `sum` over the {state="running"} series
+        # rather than `count(... == 1)`: the running series exists with value 0
+        # for a replica that is not running, so summing keeps a series for a
+        # volume at ZERO running replicas. A count-and-filter drops it, which
+        # makes the worst case indistinguishable from "no such volume".
+        # The `* 0 + 1` idiom copies pvc/pvc_namespace onto the count without
+        # touching its value, so the alert can say "immich/immich-library"
+        # instead of "pvc-7573a49b-...". The `or ... unless` tail keeps a bare
+        # series for any volume that has replicas but no robustness metric —
+        # without it a failed join would silently drop that volume from the
+        # alert, which is the same fail-open behaviour this rule exists to fix.
+        - record: bijouxlabs:longhorn_running_replicas_per_volume
+          expr: |
+            sum by (volume) (longhorn_replica_state{state="running"})
+              * on (volume) group_left(pvc, pvc_namespace)
+                (max by (volume, pvc, pvc_namespace) (longhorn_volume_robustness) * 0 + 1)
+            or
+            (
+              sum by (volume) (longhorn_replica_state{state="running"})
+              unless on (volume) max by (volume) (longhorn_volume_robustness)
+            )
+
+        # 🔴 This alert existed since 2026-08-09 and could NEVER fire: it was
+        # written against `longhorn_replica_actual_size_bytes`, which this
+        # version of longhorn-manager does not export. Only
+        # longhorn_replica_info and longhorn_replica_state exist. A rule naming
+        # a nonexistent metric evaluates to the empty set — it does not error —
+        # so it looked identical to "no volume is under-replicated" for months.
+        # Verified dead and rewritten 2026-08-22.
+        #
+        # This is the alert for the failure that cost immich-library and both
+        # vaultwarden volumes: Longhorn calls a volume `healthy` when its
+        # replicas AGREE, not when there are enough of them. A volume with
+        # exactly one replica is permanently, contentedly healthy.
+        # No exclusions, deliberately. The two detached vaultwarden husks that
+        # would have sat here at 0 replicas forever were DELETED on 2026-08-22
+        # rather than filtered out — fix the data, not the query. Prometheus is
+        # NOT excluded either: its data is disposable, but it silently dropping
+        # to one replica is exactly the 2026-08 failure and must still page.
         - alert: LonghornVolumeReplicaShortfall
-          expr: longhorn_volume_actual_size_bytes > 0 and on(volume) (longhorn_volume_robustness == 1) and on(volume) (count by (volume) (longhorn_replica_actual_size_bytes) < 2)
+          expr: |
+            bijouxlabs:longhorn_running_replicas_per_volume < 2
           for: 30m
           labels:
             severity: warning
             component: storage
           annotations:
-            summary: "Longhorn volume {{ $labels.volume }} has only one replica"
+            summary: "Longhorn volume {{ $labels.pvc_namespace }}/{{ $labels.pvc }} has {{ $value }} replica(s)"
             description: >-
               Reporting healthy but backed by a single replica, so it is one
               disk or one host away from being unrecoverable. `healthy` means
