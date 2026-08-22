@@ -1,0 +1,38 @@
+# The class for volumes that need AVAILABILITY but not DURABILITY.
+#
+# Replicas buy two separable things: surviving the loss of a host, and not
+# losing the data. Prometheus wants the first and does not care about the
+# second — its TSDB is regenerable, and it ran single-replica on kmaster02 and
+# died with the outage it was supposed to report (2026-08-03). So: 2 replicas,
+# no backups.
+#
+# ⚠️ This exists as its own class rather than reusing `longhorn-nvme` because
+# the opt-out below is a StorageClass parameter, and `longhorn-nvme` also holds
+# ocis-data, ntfy-data and actualbudget-data — all of which DO need backups.
+# ocis-data is literally the volume whose loss taught us to back everything up.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-ephemeral
+provisioner: driver.longhorn.io
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "2"
+  diskSelector: "nvme"
+  # Opts these volumes out of `backup-daily`. Longhorn puts every volume in the
+  # `default` group UNLESS it carries an explicit selector, and recurring-jobs
+  # .yaml deliberately targets `default` as a catch-all. Naming a group that no
+  # RecurringJob targets is how a volume leaves `default` without weakening that
+  # catch-all for everything else.
+  #
+  # This is not only about B2 bandwidth. Longhorn snapshots are copy-on-write,
+  # so a snapshot pins blocks that Prometheus has already expired: on
+  # 2026-08-22 the 50Gi prometheus volume held 7.76 GiB of live data and
+  # 92.8 GiB of stale backup snapshots. A snapshotted volume can only grow.
+  recurringJobSelector: '[{"name":"ephemeral","isGroup":true}]'
+  staleReplicaTimeout: "30"
+  dataLocality: "best-effort"
+  disableRevisionCounter: "true"
+  fsType: "ext4"

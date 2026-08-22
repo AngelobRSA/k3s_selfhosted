@@ -124,17 +124,22 @@ spec:
         storageSpec:
           volumeClaimTemplate:
             spec:
-              # Was `longhorn-single`. On 2026-08-09 node02 hard-hung and took
-              # Prometheus down with it, because this volume's only replica
-              # lived there — so the monitoring stack died with the failure it
-              # existed to report, and no alert could fire about any of it.
+              # Was `longhorn-single`, then `longhorn-nvme` — but that edit
+              # NEVER TOOK EFFECT. storageClassName is immutable on a bound PVC,
+              # so the live claim stayed on `longhorn` while git claimed
+              # otherwise for weeks. Corrected 2026-08-22 by deleting and
+              # recreating the PVC (Prometheus data is disposable, which is what
+              # makes that safe here and nowhere else).
               #
-              # ⚠️ storageClassName on an existing PVC is IMMUTABLE. Changing it
-              # here only affects a freshly created PVC; the live volume was
-              # bumped to 2 replicas out of band on the Longhorn side. If this
-              # StatefulSet's PVC is ever recreated, verify the new volume
-              # actually landed at 2 replicas rather than assuming it.
-              storageClassName: longhorn-nvme
+              # Background: on 2026-08-09 node02 hard-hung and took Prometheus
+              # with it, because this volume's only replica lived there — the
+              # monitoring stack died with the failure it existed to report.
+              # Hence 2 replicas, and hence NOT 3: see
+              # cluster/longhorn/storageclass-ephemeral.yaml for why this volume
+              # wants availability but not durability, and why it must not be
+              # snapshotted (92.8 GiB of stale backup snapshots pinning expired
+              # TSDB blocks, against 7.76 GiB of live data).
+              storageClassName: longhorn-ephemeral
               accessModes: ["ReadWriteOnce"]
               resources:
                 requests:
