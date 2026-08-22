@@ -1,0 +1,44 @@
+direction: down
+
+internet: 🌐 Internet {shape: cloud}
+
+homelab: Homelab — flat 192.168.0.0/24 {
+  px: proxmox (standalone infra) {
+    vyos: VyOS gateway\ndual NIC WAN/LAN {
+      style.fill: "#2a9d8f"
+      style.font-color: "#ffffff"
+    }
+    m5: kmaster05 {style.fill: "#457b9d"; style.font-color: "#ffffff"}
+  }
+
+  dc: Proxmox Datacenter «bijouxlab» {
+    grid-rows: 2
+    grid-columns: 2
+    grid-gap: 40
+    n1: node01 · M910 {
+      m1: kmaster01 💾 {style.fill: "#457b9d"; style.font-color: "#ffffff"}
+      w1: kworker01
+    }
+    n2: node02 · M910 {
+      m2: kmaster02 💾 {style.fill: "#457b9d"; style.font-color: "#ffffff"}
+      w2: kworker02
+    }
+    n3: node03 · M920 {
+      m3: kmaster03 💾 {style.fill: "#457b9d"; style.font-color: "#ffffff"}
+      w3: kworker03
+      w6: kworker06
+      w8: kworker08
+    }
+    n4: node04 · G4800 {
+      m4: kmaster04 {style.fill: "#457b9d"; style.font-color: "#ffffff"}
+      w4: kworker04
+      w5: kworker05
+      w7: kworker07
+      w9: kworker09
+    }
+  }
+
+  px.vyos -> dc: LAN
+}
+
+internet -> homelab.px.vyos: WAN

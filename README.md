@@ -1,6 +1,6 @@
 # bijouxlabs - GitOps Homelab
 
-A 12-node k3s cluster running on Proxmox, managed entirely through Flux CD. This is the result of years of iterating through every stage of self-hosting: pasting configs into VMs, a Raspberry Pi running out of RAM, Portainer managing a sprawl of containers across two mini PCs, and eventually reaching the point where the only honest way to understand Kubernetes was to build it and live in it daily.
+A 14-node k3s cluster running on Proxmox, managed entirely through Flux CD. This is the result of years of iterating through every stage of self-hosting: pasting configs into VMs, a Raspberry Pi running out of RAM, Portainer managing a sprawl of containers across two mini PCs, and eventually reaching the point where the only honest way to understand Kubernetes was to build it and live in it daily.
 
 ---
 
@@ -18,13 +18,19 @@ Fast forward: containers spread across two mini PCs and entropy quietly crept in
 
 ## Architecture
 
-```
-Proxmox Hypervisor
-├── VyOS VM (gateway — dual NIC: WAN→ONT, LAN→switch, flat 192.168.0.0/24)
-└── k3s cluster (12 nodes)
-    ├── kmaster01 / kmaster02 / kmaster03   (HA control plane + kube-vip VIP)
-    └── kworker01 – kworker09               (workload nodes)
-```
+### Physical topology
+
+Five Proxmox hosts carry the 14 k3s VMs — one etcd master per physical host, so any single host can go down for maintenance without losing quorum.
+
+![Physical topology](docs/topology.svg)
+
+💾 = dedicated 512Gi NVMe for Longhorn (`nvme` disk tag)
+
+### GitOps flow
+
+![GitOps flow](docs/appstack.png)
+
+Diagram sources live in [`docs/`](docs/) ([D2](https://d2lang.com) + [diagrams](https://diagrams.mingrammer.com)); regenerate with `scripts/render-diagrams.sh`.
 
 **Control plane HA** is handled by kube-vip as a DaemonSet, providing a static VIP across the three masters.
 
@@ -112,11 +118,10 @@ That alone would've been manageable. But the failure was compounding:
 - `flux-system` wasn't included in the cluster Kustomization resources list. With `prune: true` enabled, Flux was quietly deleting its own CRDs and controller Deployments on every successful reconcile, then immediately re-applying them. It looked like things were working fine.
 - A single typo (`NAMESPACES_APPLICATIONS` instead of `NAMESPACE_APPLICATIONS`) caused Flux to abort all `$(VAR)` postBuild substitution silently across the entire cluster, leaving raw variable tokens in every manifest.
 - kube-vip had a chicken-and-egg dependency: it needed the `bijouxlabs-replacements` ConfigMap to exist before it could reconcile, but the ConfigMap was only available after the cluster was up.
-- **postBuild `$(VAR)` substitution never reliably worked** in this cluster — proven when a live Traefik HelmRelease was found with a literal `$(LB_IP_TRAEFIK)` in it months after it was supposed to be substituted. The strategy is now to hardcode non-sensitive values directly in manifests.
+- **postBuild `$(VAR)` substitution never reliably worked** in this cluster, proven live when a Traefik HelmRelease was found with a literal `$(LB_IP_TRAEFIK)` in it months after it was supposed to be substituted. The strategy is now to hardcode non-sensitive values directly in manifests.
 
 Each fix exposed the next layer. The resolution was to stop fighting the tool: hardcode non-sensitive values directly in manifests, keep SOPS strictly for actual secrets, and annotate anything Flux shouldn't touch after initial apply with `kustomize.toolkit.fluxcd.io/ssa: ignore`.
 
-The cluster has been stable since.
 
 ---
 
@@ -134,8 +139,8 @@ One hard-learned rule: use `sops edit <file>` to modify already-encrypted files.
 
 - [x] VyOS VM on Proxmox replacing OpenWrt router (dual NIC, flat 192.168.0.0/24)
 - [x] Cloudflare Tunnel (`cloudflared`) deployed as cluster infrastructure
-- [ ] Tailscale subnet router for mobile access over tailnet (in progress)
-- [ ] IoT VLAN (VLAN 20) for smart devices — on hold; switch is accessible but VLAN rollout requires enabling VLAN trunking across the Proxmox cluster (moving all nodes to a tagged VLAN), which is high-risk to do live. Previous attempts hit OpenWrt SSID-VLAN limitations and VyOS VIF/IP conflicts on the same interface.
-- [ ] WiFi 6 APs with 802.11r/k/v roaming to replace mixed ZTE/Huawei setup
+- [x] Tailscale subnet router for mobile access over tailnet
+- [ ] WiFi 6 APs with 802.11r/k/v & SSID .1q tagging.
 - [ ] CrowdSec agent on VyOS for IoT egress monitoring
 - [ ] More DRAM NVME's for longhorn
+- [ ] NAS for media storage
