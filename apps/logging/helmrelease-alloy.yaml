@@ -24,6 +24,22 @@ spec:
       # DaemonSet — as a Deployment it would silently collect nothing.
       type: daemonset
 
+      # 🔴 Without this the DaemonSet lands on 11 of 14 nodes. kmaster01/04/05
+      # carry node-role.kubernetes.io/control-plane=true:NoSchedule (kmaster02
+      # and 03 do NOT — the masters are inconsistently tainted), so those three
+      # would collect nothing at all.
+      #
+      # kmaster04 lives on node04g4800 — the exact host whose unexplained
+      # 8-day wedge is the reason this stack exists. A log collector with
+      # blind spots on the boxes you most need to debug is worse than useless,
+      # because absence of logs reads as absence of problems.
+      #
+      # operator: Exists with no key tolerates every taint, present and
+      # future. That is the correct posture for a collector: a node that gets
+      # tainted later must not silently drop out of coverage.
+      tolerations:
+        - operator: Exists
+
     alloy:
       configMap:
         # Use the hash-suffixed ConfigMap from kustomization.yaml instead of
