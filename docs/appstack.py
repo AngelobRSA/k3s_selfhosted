@@ -190,7 +190,7 @@ platform = panel(
         App("MetalLB (L2)", "metallb", "metallb"),
         App("Longhorn", "longhorn", "longhorn"),
         App("Cilium + Hubble", "cilium", "cilium"),
-        App("CloudNative-PG", "postgresql", "cnpg"),
+        App("CloudNative-PG", "cloudnativepg", "cnpg"),
         App("kube-vip", "kubernetes", "kubevip"),
         App("cert-manager", "cert-manager", "certmanager"),
         App("cloudflared", "cloudflare", "cloudflared"),
