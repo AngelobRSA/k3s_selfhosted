@@ -33,6 +33,13 @@ parameters:
   # 92.8 GiB of stale backup snapshots. A snapshotted volume can only grow.
   recurringJobSelector: '[{"name":"ephemeral","isGroup":true}]'
   staleReplicaTimeout: "30"
-  dataLocality: "best-effort"
+  # dataLocality was "best-effort" from 2026-08-22 to 2026-08-25. It was dead
+  # config: best-effort asks Longhorn to keep a replica on the node the volume
+  # is ATTACHED to, but `diskSelector: nvme` restricts replicas to the four
+  # nvme-tagged disks (kmaster01/02/03/05) and Prometheus schedules onto
+  # workers, which carry only an untagged `default-disk`. The request could
+  # never be satisfied on any node this volume actually lands on, so Longhorn
+  # retried it forever and achieved nothing.
+  dataLocality: "disabled"
   disableRevisionCounter: "true"
   fsType: "ext4"
