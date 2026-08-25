@@ -1,0 +1,29 @@
+# LAN-facing syslog endpoint for the six Proxmox hosts.
+#
+# The chart's own `alloy` Service is ClusterIP, which the hosts cannot reach —
+# they are outside the cluster. This is a second Service over the same pods.
+apiVersion: v1
+kind: Service
+metadata:
+  name: alloy-syslog
+  namespace: logging
+  annotations:
+    metallb.universe.tf/address-pool: lan-pool
+    # Pinned so the rsyslog config on six hosts does not have to change if the
+    # Service is ever recreated. .160-.170 is the pool; .162/.168/.169 are
+    # taken by opengist / longhorn-frontend-lb / traefik.
+    metallb.universe.tf/loadBalancerIPs: 192.168.0.161
+spec:
+  type: LoadBalancer
+  # Alloy is a DaemonSet, so a pod exists on whichever node MetalLB announces
+  # from — Local is always satisfiable here. It avoids a second hop and, more
+  # usefully, preserves the sending host's real source IP.
+  externalTrafficPolicy: Local
+  selector:
+    app.kubernetes.io/name: alloy
+    app.kubernetes.io/instance: alloy
+  ports:
+    - name: syslog
+      port: 1514
+      targetPort: 1514
+      protocol: TCP

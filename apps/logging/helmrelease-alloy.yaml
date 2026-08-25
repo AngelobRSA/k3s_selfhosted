@@ -1,0 +1,61 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: alloy
+  namespace: logging
+spec:
+  releaseName: alloy
+  chart:
+    spec:
+      chart: alloy
+      version: "1.12.0"
+      sourceRef:
+        kind: HelmRepository
+        # Defined alongside the Loki HelmRelease in helmrelease-loki.yaml.
+        name: grafana
+        namespace: flux-system
+  interval: 30m
+  values:
+    fullnameOverride: alloy
+
+    controller:
+      # DaemonSet is the chart default, but it is stated explicitly because
+      # config.alloy's node-filter relabel rule is only correct for a
+      # DaemonSet — as a Deployment it would silently collect nothing.
+      type: daemonset
+
+    alloy:
+      configMap:
+        # Use the hash-suffixed ConfigMap from kustomization.yaml instead of
+        # the chart's own. The hash suffix is what makes an edit to
+        # config.alloy actually roll the DaemonSet.
+        create: false
+        name: alloy-config
+        key: config.alloy
+
+      # config.alloy filters pod targets to this node. Without NODE_NAME the
+      # keep-rule regex would be empty and every Alloy pod would tail the
+      # whole cluster.
+      extraEnv:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+
+      # Syslog listener from the Proxmox hosts. Exposed to the LAN by
+      # syslog-service.yaml; this only opens the container port.
+      extraPorts:
+        - name: syslog
+          port: 1514
+          targetPort: 1514
+          protocol: TCP
+
+      # Anonymous usage stats to Grafana Labs. Off — this is a private LAN.
+      enableReporting: false
+
+      resources:
+        requests:
+          cpu: 25m
+          memory: 128Mi
+        limits:
+          memory: 256Mi

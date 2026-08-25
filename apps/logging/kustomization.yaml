@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: logging
+resources:
+  - namespace.yaml
+  - helmrelease-loki.yaml
+  - helmrelease-alloy.yaml
+  - syslog-service.yaml
+  - grafana-datasource.yaml
+
+# ⚠️ FIXED NAME, NO HASH SUFFIX — deliberately the opposite of ntfy/homepage.
+#
+# Those two need a hash suffix because nothing watches their config: a subPath
+# mount plus a static annotation means edits never reach the process
+# (reference_homepage_configmap_rollout). The hash forces a new object name and
+# therefore a pod roll.
+#
+# The Alloy chart already ships a `config-reloader` sidecar
+# (prometheus-config-reloader, configReloader.enabled: true by default —
+# verified present in the rendered DaemonSet). It watches the mounted file and
+# hits Alloy's reload endpoint, so an in-place ConfigMap edit applies without
+# restarting the pod.
+#
+# A hash suffix here would also actively BREAK the deployment: the chart is
+# told its ConfigMap name through `spec.values.alloy.configMap.name`, and
+# kustomize's nameReference transformer does not treat a field inside Helm
+# values as a ConfigMap reference — so the name would stay unhashed while the
+# object gained a suffix, and the DaemonSet would mount a ConfigMap that does
+# not exist. (`replacements` reads metadata.name before the hash transformer
+# runs, so it does not fix this either — tested.)
+configMapGenerator:
+  - name: alloy-config
+    files:
+      - config.alloy=files/config.alloy
+
+generatorOptions:
+  disableNameSuffixHash: true

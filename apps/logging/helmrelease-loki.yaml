@@ -1,0 +1,143 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: grafana
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://grafana.github.io/helm-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: loki
+  namespace: logging
+spec:
+  releaseName: loki
+  chart:
+    spec:
+      chart: loki
+      version: "7.3.0"
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+  interval: 30m
+  values:
+    fullnameOverride: loki
+
+    # SingleBinary is the only mode that works without object storage —
+    # SimpleScalable and Distributed both REQUIRE S3/GCS/Azure (stated
+    # outright in the chart's own deploymentMode comment). We have no object
+    # store on the LAN, so this is not a sizing preference, it is the only
+    # option that runs. Good "up to a few tens of GB/day" per the chart.
+    deploymentMode: SingleBinary
+
+    loki:
+      # No multi-tenancy. With auth_enabled: true every read and write must
+      # carry an X-Scope-OrgID header, which would mean threading a tenant
+      # through both Alloy and the Grafana datasource for zero benefit on a
+      # single-tenant homelab.
+      auth_enabled: false
+
+      commonConfig:
+        # SingleBinary has exactly one instance holding the data locally.
+        replication_factor: 1
+
+      storage:
+        # Chart default is s3. Filesystem keeps chunks on the PVC below.
+        type: filesystem
+
+      # REQUIRED whenever useTestSchema is false. The chart ships
+      # schemaConfig: {} and will not start without one. tsdb + v13 is the
+      # current-generation pairing; older boltdb-shipper/v11 combinations are
+      # deprecated and slower.
+      schemaConfig:
+        configs:
+          - from: "2026-08-25"
+            store: tsdb
+            object_store: filesystem
+            schema: v13
+            index:
+              prefix: loki_index_
+              period: 24h
+
+      limits_config:
+        # 14 nodes + 6 Proxmox hosts is a small stream count; the defaults are
+        # tuned for multi-tenant SaaS and reject aggressively at this scale.
+        retention_period: 30d
+        reject_old_samples: true
+        reject_old_samples_max_age: 168h
+        # Proxmox hosts backfill via rsyslog after a network blip, and a host
+        # that was unreachable for days (node04) will replay old timestamps.
+        max_query_lookback: 30d
+
+      compactor:
+        # Retention is NOT enforced unless the compactor is told to do it.
+        # Without these two keys retention_period above is silently advisory
+        # and the PVC grows forever.
+        retention_enabled: true
+        delete_request_store: filesystem
+
+    # 🔴 Setting deploymentMode: SingleBinary does NOT zero the SimpleScalable
+    # targets — their replica defaults stay non-zero and the chart's own
+    # validate.yaml then refuses to render:
+    #   "You have more than zero replicas configured for both the single binary
+    #    and simple scalable targets."
+    # Caught by `helm template` before this ever reached the cluster.
+    write:
+      replicas: 0
+    read:
+      replicas: 0
+    backend:
+      replicas: 0
+
+    singleBinary:
+      replicas: 1
+      persistence:
+        enabled: true
+        # 2 replicas, nvme, NOT backed up to B2. Logs are large, mostly
+        # write-once, and pushing them over a 4.8 MB/s link nightly would be
+        # actively harmful. See reference_longhorn_replica_policy.
+        storageClass: longhorn-ephemeral
+        size: 50Gi
+        # 🔴 Chart default is enableStatefulSetAutoDeletePVC: true with
+        # whenDeleted/whenScaled: Delete — deleting or scaling down the
+        # StatefulSet would take the log store with it. That is exactly
+        # backwards for the thing you consult AFTER an incident.
+        # Setting this false makes the chart omit persistentVolumeClaimRetentionPolicy
+        # entirely (verified in the rendered StatefulSet), so Kubernetes' own
+        # default of Retain/Retain applies. whenDeleted/whenScaled are then
+        # unused, so they are deliberately not set here.
+        enableStatefulSetAutoDeletePVC: false
+      resources:
+        requests:
+          cpu: 100m
+          memory: 512Mi
+        limits:
+          memory: 1Gi
+
+    # ---- everything below is chart default ON and must be turned OFF ----
+
+    # 🔴 chunksCache defaults to allocatedMemory: 8192 (8 GiB of memcached)
+    # and resultsCache to 1024. On 8 GiB workers that is not survivable, and
+    # SingleBinary at this volume does not need either.
+    chunksCache:
+      enabled: false
+    resultsCache:
+      enabled: false
+
+    # nginx in front of Loki. Only earns its place in multi-target modes;
+    # in SingleBinary it is a second hop to the same pod. Alloy and Grafana
+    # both address the loki Service directly.
+    gateway:
+      enabled: false
+
+    # Synthetic log generator that continuously writes and reads back to prove
+    # the pipeline works. Useful signal, but it is a per-node DaemonSet and
+    # writes constantly — not worth the volume here.
+    lokiCanary:
+      enabled: false
+
+    test:
+      enabled: false

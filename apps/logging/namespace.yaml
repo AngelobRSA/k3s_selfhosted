@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: logging
+  labels:
+    # Opt in to Goldilocks/VPA right-sizing like the other 17 namespaces.
+    goldilocks.fairwinds.com/enabled: "true"

@@ -1,0 +1,87 @@
+// Grafana Alloy — log collection for bijouxlabs.
+//
+// Two independent sources feed one Loki:
+//   1. Kubernetes pod logs   (every node, via this DaemonSet)
+//   2. Proxmox host syslog   (pushed in by rsyslog on the 6 hosts)
+//
+// Source 2 is the one that exists because of node04: when its management
+// plane wedged on 2026-08-17 it dropped every NEW INBOUND connection while
+// established and outbound traffic kept flowing (corosync never missed a
+// beat). rsyslog pushes OUTBOUND, so it would have kept shipping node04's
+// journal for all 8 days that the host was otherwise unreachable.
+
+// ---------------------------------------------------------------- pod logs
+
+discovery.kubernetes "pods" {
+  role = "pod"
+}
+
+discovery.relabel "pods" {
+  targets = discovery.kubernetes.pods.targets
+
+  // 🔴 THIS RULE IS LOAD-BEARING. This is a DaemonSet, so without it all 14
+  // Alloy pods would each tail every pod in the cluster — 14x duplicate log
+  // lines and 14x the API server read load. Keep only pods on MY node.
+  rule {
+    source_labels = ["__meta_kubernetes_pod_node_name"]
+    regex         = sys.env("NODE_NAME")
+    action        = "keep"
+  }
+
+  rule {
+    source_labels = ["__meta_kubernetes_namespace"]
+    target_label  = "namespace"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_name"]
+    target_label  = "pod"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_container_name"]
+    target_label  = "container"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_node_name"]
+    target_label  = "node"
+  }
+  // job = <namespace>/<app name> is the convention Grafana's Loki dashboards
+  // expect; without it every stream lands under a single empty job.
+  rule {
+    source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+    separator     = "/"
+    target_label  = "job"
+  }
+}
+
+loki.source.kubernetes "pods" {
+  targets    = discovery.relabel.pods.output
+  forward_to = [loki.write.default.receiver]
+}
+
+// ------------------------------------------------------------ host syslog
+
+loki.source.syslog "proxmox" {
+  listener {
+    address       = "0.0.0.0:1514"
+    protocol      = "tcp"
+    // RFC5424 carries a real structured timestamp with timezone. RFC3164 (the
+    // rsyslog default) has no year and no zone, which is exactly how the
+    // 2026-08-24 Prometheus incident stayed illegible for hours — the nodes
+    // log UTC and Angelo reads SAST. rsyslog is configured to emit 5424.
+    syslog_format = "rfc5424"
+    label_structured_data = true
+    labels        = {
+      job    = "syslog",
+      source = "proxmox",
+    }
+  }
+  forward_to = [loki.write.default.receiver]
+}
+
+// ------------------------------------------------------------------ output
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki.logging.svc.cluster.local:3100/loki/api/v1/push"
+  }
+}
