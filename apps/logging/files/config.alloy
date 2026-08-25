@@ -60,6 +60,47 @@ loki.source.kubernetes "pods" {
 
 // ------------------------------------------------------------ host syslog
 
+// 🔴 loki.source.syslog REMOVES every `__`-prefixed label before it forwards.
+// A downstream loki.relabel therefore never sees __syslog_message_hostname —
+// it is already gone. The labels must be promoted INSIDE the source, via its
+// top-level `relabel_rules` argument, which consumes this component's `rules`
+// EXPORT rather than its receiver.
+//
+// forward_to = [] is correct and deliberate: this component is used purely as
+// a rules provider, not as a link in the log path.
+//
+// Without this, every host collapses into one undifferentiated stream with no
+// way to ask "what did node04 say?" — which is the whole reason the listener
+// exists. Confirmed empirically: the first two preflight lines arrived with
+// only {job, source, service_name}.
+//
+// Cardinality is bounded: hostname is 6 values, severity 8, facility ~24,
+// app_name is per-unit and small on a hypervisor. Nothing per-request.
+loki.relabel "syslog" {
+  forward_to = []
+
+  rule {
+    action        = "replace"
+    source_labels = ["__syslog_message_hostname"]
+    target_label  = "hostname"
+  }
+  rule {
+    action        = "replace"
+    source_labels = ["__syslog_message_app_name"]
+    target_label  = "app"
+  }
+  rule {
+    action        = "replace"
+    source_labels = ["__syslog_message_severity"]
+    target_label  = "severity"
+  }
+  rule {
+    action        = "replace"
+    source_labels = ["__syslog_message_facility"]
+    target_label  = "facility"
+  }
+}
+
 loki.source.syslog "proxmox" {
   listener {
     address       = "0.0.0.0:1514"
@@ -69,46 +110,14 @@ loki.source.syslog "proxmox" {
     // 2026-08-24 Prometheus incident stayed illegible for hours — the nodes
     // log UTC and Angelo reads SAST. rsyslog is configured to emit 5424.
     syslog_format = "rfc5424"
-    label_structured_data = true
     labels        = {
       job    = "syslog",
       source = "proxmox",
     }
   }
-  forward_to = [loki.relabel.syslog.receiver]
-}
 
-// 🔴 Without this, EVERY host's syslog collapses into one undifferentiated
-// stream — the preflight test landed with only {job, source, service_name}
-// and no way to ask "what did node04 say?", which is the entire reason this
-// listener exists.
-//
-// loki.source.syslog exposes the RFC5424 header fields as internal
-// __syslog_* labels. Internal labels (double underscore) are DROPPED before
-// the write unless they are explicitly promoted here.
-//
-// Cardinality is deliberately bounded: hostname is 6 values, severity 8,
-// facility ~24. app_name is per-unit but small on a hypervisor. None of these
-// are per-request, so no stream explosion.
-loki.relabel "syslog" {
-  forward_to = [loki.write.default.receiver]
-
-  rule {
-    source_labels = ["__syslog_message_hostname"]
-    target_label  = "hostname"
-  }
-  rule {
-    source_labels = ["__syslog_message_app_name"]
-    target_label  = "app"
-  }
-  rule {
-    source_labels = ["__syslog_message_severity"]
-    target_label  = "severity"
-  }
-  rule {
-    source_labels = ["__syslog_message_facility"]
-    target_label  = "facility"
-  }
+  relabel_rules = loki.relabel.syslog.rules
+  forward_to    = [loki.write.default.receiver]
 }
 
 // ------------------------------------------------------------------ output
