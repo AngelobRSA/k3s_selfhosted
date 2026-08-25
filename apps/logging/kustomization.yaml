@@ -1,6 +1,16 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: logging
+# ⚠️ NO top-level `namespace:` — deliberately, and this bit us once.
+#
+# The namespace transformer rewrites EVERY resource, including the
+# `grafana` HelmRepository that helmrelease-loki.yaml explicitly places in
+# flux-system. It landed in `logging` instead, while both HelmReleases kept
+# pointing at flux-system, and Flux failed with:
+#   HelmChart ... failed to get source: HelmRepository "grafana" not found
+#
+# apps/radar does the same thing correctly by simply not setting it (which is
+# why `skyhook` sits in flux-system). Every resource here declares its own
+# namespace; the generator below is the only one that needs it stated.
 resources:
   - namespace.yaml
   - helmrelease-loki.yaml
@@ -30,6 +40,7 @@ resources:
 # runs, so it does not fix this either — tested.)
 configMapGenerator:
   - name: alloy-config
+    namespace: logging
     files:
       - config.alloy=files/config.alloy
 
