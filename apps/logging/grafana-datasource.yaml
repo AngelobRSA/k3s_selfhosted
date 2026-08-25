@@ -2,11 +2,22 @@
 # watches for ConfigMaps labelled grafana_datasource=1 (verified against the
 # live sidecar's LABEL / LABEL_VALUE env) and drops them into
 # /etc/grafana/provisioning/datasources.
+#
+# 🔴 namespace: monitoring, NOT logging — even though this belongs to the
+# logging stack. The sidecar has no NAMESPACE env set, so it defaults to
+# watching ONLY its own namespace. Sitting in `logging` it was simply never
+# seen: no error anywhere, the datasource just silently did not exist in
+# Grafana. Verified by listing /etc/grafana/provisioning/datasources and
+# Grafana's own /api/datasources.
+#
+# The alternative is sidecar.datasources.searchNamespace: ALL on the
+# kube-prometheus-stack release; placing the ConfigMap here is the smaller
+# change and does not widen what that sidecar watches cluster-wide.
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: loki-datasource
-  namespace: logging
+  namespace: monitoring
   labels:
     grafana_datasource: "1"
 data:
