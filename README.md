@@ -1,6 +1,6 @@
 # bijouxlabs - GitOps Homelab
 
-A 14-node k3s cluster running on Proxmox, managed entirely through Flux CD. This is the result of years of iterating through every stage of self-hosting: pasting configs into VMs, a Raspberry Pi running out of RAM, Portainer managing a sprawl of containers across two mini PCs, and eventually reaching the point where the only honest way to understand Kubernetes was to build it and live in it daily.
+A 14-node k3s cluster running across a Proxmox homelab and managed through Flux CD. It grew through every stage of self-hosting: hand-built VMs, a Raspberry Pi running out of RAM, Portainer managing containers across mini PCs, and finally a Kubernetes environment substantial enough to learn from by operating every day.
 
 ---
 
@@ -20,26 +20,32 @@ Fast forward: containers spread across two mini PCs and entropy quietly crept in
 
 ### Physical topology
 
-Five Proxmox hosts carry the 14 k3s VMs — one etcd master per physical host, so any single host can go down for maintenance without losing quorum.
+Six Proxmox hosts make up the lab. Five clustered hosts carry the 14 k3s VMs, with one etcd master in each physical failure domain; a standalone infrastructure host runs the VyOS gateway. The five-master control plane retains quorum through a single-host maintenance window or failure.
 
 ![Physical topology](docs/topology.svg)
 
-💾 = dedicated 512Gi NVMe for Longhorn (`nvme` disk tag)
+💾 = an NVMe-backed Longhorn disk (`nvme` disk tag). Four masters currently provide these disks across four physical zones.
 
 ### GitOps flow
 
 ![GitOps flow](docs/appstack.png)
 
-Diagram sources live in [`docs/`](docs/) ([D2](https://d2lang.com) + [diagrams](https://diagrams.mingrammer.com)); regenerate with `scripts/render-diagrams.sh`.
+Diagram sources live in [`docs/`](docs/) ([D2](https://d2lang.com) + [Graphviz](https://graphviz.org)); regenerate both with [`scripts/render-diagrams.sh`](scripts/render-diagrams.sh).
 
-**Control plane HA** is handled by kube-vip as a DaemonSet, providing a static VIP across the three masters.
+**Control plane HA** is handled by kube-vip as a DaemonSet, providing a static VIP across all five masters. Every master is declaratively tainted for control-plane and storage duties; normal application workloads run on workers.
 
 **Storage** is split intentionally:
-- kmaster01 + kmaster02 have dedicated 502Gi NVMe drives mounted at `/mnt/longhorn-nvme`, tagged `nvme` in Longhorn
-- Worker nodes have ~20-25Gi free on their OS disks — usable for small PVCs, too small for anything large
-- PVCs that need NVMe use the `longhorn-nvme` StorageClass (`diskSelector: nvme, numberOfReplicas: 2`) to pin replicas to both NVMe nodes; relying on PVC annotations alone is unreliable as Longhorn ignores them in favour of the global default
+
+- `kmaster01`, `kmaster02`, `kmaster03`, and `kmaster05` provide `nvme`-tagged disks in four separate Proxmox zones.
+- Durable volumes use three replicas, leaving one NVMe zone available for rebuilds during maintenance.
+- `longhorn-nvme` provides two-replica NVMe storage where availability matters but a third synchronous copy is unnecessary.
+- `longhorn-ephemeral` gives Prometheus two replicas but no backups; its TSDB is intentionally recreated rather than repaired.
 
 **Networking** uses MetalLB in L2 mode for LoadBalancer IPs and Traefik as the ingress controller, with TLS terminated via Cloudflare's ACME DNS challenge. A `cloudflared` deployment runs as cluster infrastructure to expose selected services externally via Cloudflare Tunnel without port forwarding.
+
+**Observability** combines kube-prometheus-stack, Grafana, Uptime Kuma, Radar, Hubble, Loki, and Grafana Alloy. Alloy runs on all 14 k3s nodes for pod logs. All six Proxmox hosts push RFC5424 syslog over TCP to Alloy through a MetalLB endpoint, which forwards it to Loki; the external dead-man's switch deliberately remains outside the cluster.
+
+The architectural and operational choices behind this setup are recorded in [`DECISIONS.md`](DECISIONS.md).
 
 ---
 
@@ -57,8 +63,13 @@ Diagram sources live in [`docs/`](docs/) ([D2](https://d2lang.com) + [diagrams](
 | Storage | Longhorn |
 | CNI | Cilium + Hubble |
 | Database operator | CloudNative-PG |
+| TLS | cert-manager + Cloudflare DNS-01 |
 | Secrets | SOPS + age |
 | External tunnel | cloudflared (Cloudflare Tunnel) |
+| Metrics and dashboards | Prometheus + Grafana |
+| Logs | Grafana Alloy + Loki |
+| Uptime and liveness | Uptime Kuma + external Healthchecks.io dead-man switch |
+| Resource recommendations | Goldilocks + VPA |
 
 ---
 
@@ -66,22 +77,24 @@ Diagram sources live in [`docs/`](docs/) ([D2](https://d2lang.com) + [diagrams](
 
 | App | Description |
 |---|---|
+| [Actual Budget](https://actualbudget.org) | Privacy-focused personal finance and budgeting |
 | [Immich](https://immich.app) | Self-hosted photo library; CNPG cluster with VectorChord for ML embeddings |
 | [Vaultwarden](https://github.com/dani-garcia/vaultwarden) | Self-hosted Bitwarden-compatible password manager |
+| [Vikunja](https://vikunja.io) | Task and project management |
 | [Paperless-ngx](https://docs.paperless-ngx.com) | Document management with OCR; sidecars: Valkey, Apache Tika, Gotenberg |
 | [Karakeep](https://karakeep.app) | Bookmark manager with AI-powered crawling, tagging and search via local Ollama |
 | [Home Assistant](https://www.home-assistant.io) | IoT and home automation |
-| [n8n](https://n8n.io) | Workflow automation with public webhook exposure via Cloudflare Tunnel |
 | [Homepage](https://gethomepage.dev) | Unified service dashboard |
+| [ntfy](https://ntfy.sh) | Self-hosted push notifications and Alertmanager delivery |
 | [Uptime Kuma](https://github.com/louislam/uptime-kuma) | Service uptime monitoring |
 | [Opengist](https://github.com/thomiceli/opengist) | Self-hosted gist service |
 | [Copyparty](https://github.com/9001/copyparty) | Self-hosted file sharing |
 | [ownCloud Infinite Scale](https://owncloud.dev/ocis/) | Self-hosted Google Drive replacement; single-binary OCIS on NVMe-backed Longhorn |
 | [StefHQ](https://github.com/SLBij/stefhq) | Personal AI assistant — FastAPI + SvelteKit + ARQ worker + pgvector + Ollama |
+| [Primecrunch](https://github.com/angelobrsa/primecrunch-docker) | Self-hosted Prime Video catalogue browser; currently paused in Git (`replicas: 0`) |
 | [Radar](https://github.com/skyhook-io/radar) | Kubernetes cluster visibility — workloads, traffic (via Hubble), events |
 | [Qdrant](https://qdrant.tech) | Vector database for semantic search and RAG |
 | [Ollama](https://ollama.com) | Local LLM inference server (`llama3.2`, `nomic-embed-text`, `moondream`) |
-| [Grafana + Prometheus](https://grafana.com) | Cluster metrics and dashboards (kube-prometheus-stack) |
 
 ---
 
@@ -89,8 +102,10 @@ Diagram sources live in [`docs/`](docs/) ([D2](https://d2lang.com) + [diagrams](
 
 ```
 .
+├── DECISIONS.md        # Architectural and operational decision register
 ├── cluster/
 │   ├── flux-system/    # Flux bootstrapping + Kustomization CRs
+│   ├── topology/       # Declarative node zones and master taints
 │   ├── traefik/        # Ingress controller + TLS config
 │   ├── metallb/        # L2 LoadBalancer IP pools
 │   ├── longhorn/       # Distributed storage + StorageClass
@@ -99,8 +114,12 @@ Diagram sources live in [`docs/`](docs/) ([D2](https://d2lang.com) + [diagrams](
 │   ├── cilium/         # CNI + Hubble relay/UI
 │   ├── cloudflared/    # Cloudflare Tunnel deployment (cluster infrastructure)
 │   └── bijouxlabs/     # Proxmox node reverse-proxy (headless Services + Endpoints + Ingresses per host)
-└── apps/
-    └── <app>/          # Per-app Kustomization, HelmRelease, SOPS secrets
+├── apps/
+│   ├── logging/        # Alloy, Loki, syslog endpoint, Grafana datasource
+│   ├── monitoring/     # kube-prometheus-stack, alerts and dashboards
+│   └── <app>/          # Per-app resources, HelmRelease and SOPS secrets
+├── docs/               # Diagram sources and rendered architecture
+└── scripts/            # Diagram rendering and maintenance helpers
 ```
 
 Secrets are encrypted with SOPS/age and committed directly to the repo. LAN IPs and credentials stay encrypted; domain names and non-sensitive config are hardcoded in manifests.
@@ -140,7 +159,8 @@ One hard-learned rule: use `sops edit <file>` to modify already-encrypted files.
 - [x] VyOS VM on Proxmox replacing OpenWrt router (dual NIC, flat 192.168.0.0/24)
 - [x] Cloudflare Tunnel (`cloudflared`) deployed as cluster infrastructure
 - [x] Tailscale subnet router for mobile access over tailnet
-- [ ] WiFi 6 APs with 802.11r/k/v & SSID .1q tagging.
+- [x] Central Loki logging for k3s and Proxmox syslog
+- [ ] WiFi 6 APs with 802.11r/k/v and SSID 802.1Q tagging
 - [ ] CrowdSec agent on VyOS for IoT egress monitoring
-- [ ] More DRAM NVME's for longhorn
+- [ ] Additional DRAM and NVMe capacity for Longhorn
 - [ ] NAS for media storage

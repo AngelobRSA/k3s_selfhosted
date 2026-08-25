@@ -8,12 +8,11 @@ homelab: Homelab — flat 192.168.0.0/24 {
       style.fill: "#2a9d8f"
       style.font-color: "#ffffff"
     }
-    m5: kmaster05 {style.fill: "#457b9d"; style.font-color: "#ffffff"}
   }
 
   dc: Proxmox Datacenter «bijouxlab» {
     grid-rows: 2
-    grid-columns: 2
+    grid-columns: 3
     grid-gap: 40
     n1: node01 · M910 {
       m1: kmaster01 💾 {style.fill: "#457b9d"; style.font-color: "#ffffff"}
@@ -35,6 +34,9 @@ homelab: Homelab — flat 192.168.0.0/24 {
       w5: kworker05
       w7: kworker07
       w9: kworker09
+    }
+    n5: node05 · M920 {
+      m5: kmaster05 💾 {style.fill: "#457b9d"; style.font-color: "#ffffff"}
     }
   }
 

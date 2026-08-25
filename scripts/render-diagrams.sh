@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Re-render the README architecture diagrams from their sources in docs/.
-# Deps: d2 (https://d2lang.com), python 'diagrams' package (pip install diagrams), graphviz
+# Deps: d2 (https://d2lang.com) and Graphviz (dot)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

@@ -1,0 +1,33 @@
+scripts/cluster-summary*
+scripts/proxmox-exporters-setup.sh
+roadmap.md
+notes.md
+cluster/longhorn/charts/longhorn-1.10.0/longhorn/.helmignore
+cluster/longhorn/charts/longhorn-1.10.0/longhorn/app-readme.md
+cluster/longhorn/charts/longhorn-1.10.0/longhorn/ocp-readme.md
+cluster/longhorn/charts/longhorn-1.10.0/longhorn/README.md
+cluster/longhorn/charts/longhorn-1.10.0/longhorn/README.md.gotmpl
+cluster/longhorn/charts/longhorn-1.10.0/longhorn/templates/NOTES.txt
+uptime-kuma-backup-20260529/
+# Private overlay - Environment-specific configuration
+# Contains sensitive data like IP addresses, domain names, credentials
+cluster/overlays/private/
+!cluster/overlays/private/kustomization.yaml
+!cluster/overlays/private/flux/
+!cluster/overlays/private/flux/kustomization.yaml
+# Allow template files but ignore actual values
+!cluster/overlays/private/flux/kustomizevars.yaml.example
+# knowledge graph of cluster for educational purposes
+.understand-anything/
+# SOPS encrypted files (allow them)
+notes-private.md
+README-public.md
+#networkmigrationplan
+network.md
+
+# Local runbooks — contain LAN IPs, never commit (public repo)
+docs/runbooks/
+
+# Disposable diagram build artifacts; rendered README assets stay tracked
+docs/**/*.dot
+docs/**/*.tmp
