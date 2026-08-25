@@ -195,3 +195,53 @@ spec:
               A scrape target has been unreachable for 15m. Catches exporters
               that die quietly — node03's smartctl_exporter was down and
               unnoticed until a manual audit on 2026-08-09.
+
+        # ------------------------------------------------------------------
+        # 2026-08-24: Prometheus's PVC went read-only (ext4 journal abort) and
+        # it kept running for 14.5h — alive enough to hold the dead-man's
+        # switch green while emitting FALSE KubeletDown alerts and a FALSE
+        # all-clear on HostManagementPlaneWedged while node04 was still wedged.
+        #
+        # The dead-man's switch cannot catch this by construction: it asks
+        # "is Prometheus running?", and Prometheus WAS running. These two ask
+        # the question it cannot — "is Prometheus still able to record?"
+        #
+        # Both metric names verified against the live instance before writing
+        # (reference_promql_rules_fail_open: a rule naming a metric that does
+        # not exist returns empty, which is indistinguishable from all-clear).
+        # ------------------------------------------------------------------
+        - alert: PrometheusTSDBWriteFailing
+          expr: increase(prometheus_tsdb_wal_writes_failed_total[5m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+            component: monitoring
+          annotations:
+            summary: "Prometheus cannot write its WAL — metrics are being lost"
+            description: >-
+              WAL writes are failing, which means the TSDB volume is unwritable
+              (read-only remount, full disk, or a dead Longhorn engine). On
+              2026-08-24 this exact condition ran 14.5h undetected and produced
+              false alerts the whole time. Check `kubectl -n monitoring logs`
+              and `dmesg -T | grep EXT4` on the node holding the volume.
+
+        - alert: PrometheusNotIngesting
+          # sum() is load-bearing. This metric splits by a `type` label into
+          # {type="float"} and {type="histogram"}; native histograms are unused
+          # here so the histogram series sits at 0 forever. Without the sum,
+          # the bare rate() matches it and the alert fires permanently — a
+          # guaranteed false positive, which is how you train yourself to
+          # ignore the alerts that matter. Caught by running the expression
+          # against the live instance before committing it.
+          expr: sum(rate(prometheus_tsdb_head_samples_appended_total[10m])) == 0
+          for: 10m
+          labels:
+            severity: critical
+            component: monitoring
+          annotations:
+            summary: "Prometheus has stopped appending samples"
+            description: >-
+              Prometheus is up and evaluating but no longer recording any
+              samples, so every range query silently returns empty and rules
+              that depend on data will fail open. Backstop for the case where
+              WAL writes succeed but ingestion has stalled.
