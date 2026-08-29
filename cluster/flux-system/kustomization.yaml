@@ -8,4 +8,5 @@ resources:
 - bijouxlabs-kustomization.yaml
 - cert-manager-kustomization.yaml
 - cert-manager-config-kustomization.yaml
+- lilliput-kustomization.yaml
 

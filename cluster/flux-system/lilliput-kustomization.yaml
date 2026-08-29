@@ -1,0 +1,55 @@
+# The seam to AngelobRSA/lilliput -- a society of agents, deployed from its own
+# repository. The boundary is deliberate: a PR against that repo can only
+# damage the society, while a PR against this one can touch the whole cluster.
+# Citizens will eventually author diffs, and this is their blast radius.
+#
+# Source of truth for these two objects is lilliput's deploy/flux-seam/, kept
+# there so the boundary is documented on the society's side too.
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: lilliput
+  namespace: flux-system
+spec:
+  interval: 10m
+  # ssh://, because a GitHub deploy key IS an SSH key. The lilliput-auth secret
+  # is created in-cluster, not committed:
+  #   flux create secret git lilliput-auth \
+  #     --url=ssh://git@github.com/AngelobRSA/lilliput --namespace=flux-system
+  # then add the printed public key to that repo's deploy keys, read-only.
+  url: ssh://git@github.com/AngelobRSA/lilliput
+  ref:
+    branch: main
+  secretRef:
+    name: lilliput-auth
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: lilliput
+  namespace: flux-system
+spec:
+  interval: 10m
+  # ./deploy/board, NOT ./deploy. The board alpha only: Postgres, the board
+  # service and a LAN ingress. That repo also declares a mint, a rate job and
+  # six citizen CronJobs which are deliberately not reconciled -- widening this
+  # path is the act that starts the society's economy, and wants to be a
+  # considered commit rather than a tidy-up. lilliput DECISIONS.md D-028.
+  path: ./deploy/board
+  prune: true
+  wait: true
+  # CNPG bootstrapping two instances on Longhorn exceeds 5m on a cold start,
+  # and a timeout marks the whole Kustomization failed.
+  timeout: 10m
+  sourceRef:
+    kind: GitRepository
+    name: lilliput
+  dependsOn:
+    - name: traefik
+  # No decryption block: the board holds no SOPS secret. Its only credential is
+  # the database URI, which CNPG generates as lilliput-db-app because the
+  # Cluster sets owner: lilliput.
+  #
+  # No postBuild substitution either. That has never worked reliably here -- a
+  # literal $(LB_IP_TRAEFIK) sat in a live HelmRelease for months.
