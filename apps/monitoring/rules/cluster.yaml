@@ -116,6 +116,120 @@ spec:
               Above 85%. Longhorn needs free space to rebuild replicas; running
               out means a node loss cannot be recovered from.
 
+        # ----------------------------------------------------------------
+        # Backups. Added 2026-09-03 after B2 backups had been silently dead
+        # for WEEKS: a DNS search-domain hijack sent s3...backblazeb2.com to
+        # Traefik, so every upload failed x509 verification. Nothing alerted.
+        #
+        # 🔴 The reason nothing alerted is the important part: the Longhorn
+        # backup TARGET reported `available: True` the entire time, and the
+        # backup-daily CronJob reported `Complete` — it dutifully attempted
+        # every volume and each one failed, in 145 minutes. Both of the
+        # obvious signals were green. Never alert on target availability or
+        # on job success; alert on whether NEW DATA actually landed.
+        #
+        # There is no backup-timestamp metric — `longhorn_backup_state` is
+        # all we get, and retention keeps 7 Completed backups per volume
+        # forever, so neither the state nor the count changes as backups go
+        # stale. Freshness is therefore derived by IDENTITY: each run creates
+        # a backup CR with a new `backup` label, so
+        #   (state == 3) unless (state offset 25h)
+        # is "Completed backups that did not exist 25h ago" — i.e. genuinely
+        # new ones. A volume with none is stale.
+        #
+        # `and on (volume) (longhorn_volume_robustness)` restricts this to
+        # volumes that STILL EXIST, so retired husks (pvc-fb63b9dc, the old
+        # faulted immich volume) don't alert forever.
+        #
+        # ⚠️ Known fail-open: if Prometheus has no data at offset 25h (e.g.
+        # after the kind of TSDB outage in project_prometheus_ext4_journal_
+        # abort), every backup looks "new" and this stays silent. It is a
+        # backstop, not a substitute for the external dead-man's switch.
+        #
+        # Verified against a known-true positive on 2026-09-03: returned the
+        # 17 live stale volumes and independently reproduced the per-volume
+        # lastSyncedAt analysis. state: 0=New 1=Pending 3=Completed 4=Error
+        # ----------------------------------------------------------------
+        - alert: LonghornBackupStale
+          expr: |
+            (
+              count by (volume) (longhorn_backup_state)
+              unless
+              count by (volume) (
+                (longhorn_backup_state == 3) unless (longhorn_backup_state offset 25h)
+              )
+            ) and on (volume) (longhorn_volume_robustness)
+          for: 1h
+          labels:
+            severity: warning
+            component: storage
+          annotations:
+            summary: "No new backup for {{ $labels.volume }} in over 25h"
+            description: >-
+              The daily job has produced no NEW completed backup for this
+              volume in more than 25 hours, so it is drifting out of
+              protection. Check the backup CRs for an Error state and confirm
+              the volume can still reach B2 — from the node holding its
+              REPLICA, which is what performs the upload, not the node it is
+              attached to. Diagnose DNS with `getent hosts`, never nslookup.
+              Runbook: docs/runbooks/reference_longhorn_b2_restore.md
+
+        - alert: LonghornBackupsStaleClusterWide
+          expr: |
+            count(
+              (
+                count by (volume) (longhorn_backup_state)
+                unless
+                count by (volume) (
+                  (longhorn_backup_state == 3) unless (longhorn_backup_state offset 25h)
+                )
+              ) and on (volume) (longhorn_volume_robustness)
+            ) >= 5
+          for: 2h
+          labels:
+            severity: critical
+            component: storage
+          annotations:
+            summary: "{{ $value }} volumes have no fresh backup — backups are systemically broken"
+            description: >-
+              Several volumes went stale at once, which means a shared cause
+              (backup target, credentials, DNS, network) rather than one bad
+              volume. This is the shape the 2026-09-03 outage would have made.
+              Treat as data-loss exposure, not a storage nuisance.
+
+        - alert: LonghornBackupErrorsAppearing
+          expr: |
+            sum(longhorn_backup_state == bool 4)
+            - sum(longhorn_backup_state offset 24h == bool 4) > 0
+          for: 30m
+          labels:
+            severity: warning
+            component: storage
+          annotations:
+            summary: "{{ $value }} new Longhorn backup errors in the last 24h"
+            description: >-
+              Compares against 24h ago rather than alerting on `== 4`,
+              because failed backup CRs PERSIST — on 2026-09-03 there were 47
+              lingering Error records, so a naive rule would fire forever on
+              history and be muted as noise.
+
+        - alert: LonghornBackupStuckPending
+          expr: count by (volume) (longhorn_backup_state == 1) > 0
+          for: 3h
+          labels:
+            severity: warning
+            component: storage
+          annotations:
+            summary: "Backup for {{ $labels.volume }} stuck Pending for 3h"
+            description: >-
+              A Pending backup is not merely a failed backup. It holds a
+              `backup-controller` attachment ticket that PINS the volume to
+              its node, which blocks `kubectl drain` via the instance-manager
+              PDB and can stall node maintenance for hours. On 2026-09-03 one
+              sat Pending for 15h at 0% and blocked a drain. Inspect with
+              `kubectl get volumeattachments.longhorn.io -n longhorn-system
+              <pvc> -o json`; deleting the 0%-progress backup CR releases it.
+
     # ------------------------------------------------------------------
     # Node health. KubeNodeNotReady ships as `warning` in kube-prometheus-
     # stack, which is why kmaster02 sat NotReady for ~6h on 2026-08-05 with
