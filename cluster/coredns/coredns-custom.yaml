@@ -19,8 +19,35 @@ data:
   #
   # The `*.override` suffix injects this into the existing `.:53` server block
   # (see `import /etc/coredns/custom/*.override` in the coredns Corefile).
+  #
+  # ── WHY THE REGEX IS ANCHORED (2026-09-03) ───────────────────────────────
+  # This was `(.*)\.bijouxlabs\.cc`, which is unanchored and matched ANY name
+  # merely ENDING in bijouxlabs.cc — including a search-domain expansion.
+  #
+  # kmaster04/kmaster05 get `search bijouxlabs.cc` from VyOS DHCP, and pods
+  # inherit it. With ndots:5, any external hostname of fewer than 5 dots is
+  # tried against the search list FIRST, so a lookup of
+  #   s3.eu-central-003.backblazeb2.com      (3 dots)
+  # became
+  #   s3.eu-central-003.backblazeb2.com.bijouxlabs.cc
+  # which matched `(.*)` and was answered with Traefik's ClusterIP. Every TLS
+  # handshake to Backblaze then got CN=*.bijouxlabs.cc and failed x509
+  # verification — silently killing Longhorn's B2 backups for weeks, and
+  # hijacking any other external host with <5 dots from those two nodes.
+  #
+  # `[^.]+` restricts the match to a SINGLE label, which is what every real
+  # host here is (photos., grafana., todo., …). A search-expanded external name
+  # keeps its own dots in the prefix and so no longer matches; CoreDNS forwards
+  # it upstream, the lookup NXDOMAINs, and the resolver falls through to the
+  # true FQDN. `\.?$` tolerates the trailing dot on a qname.
+  #
+  # ⚠️ Diagnose this class of bug with `getent hosts <name>`, NEVER `nslookup`
+  # — nslookup queries the FQDN directly and skips search expansion, so it
+  # reports the correct answer while every real client gets the wrong one.
+  # If a multi-level host (a.b.bijouxlabs.cc) is ever added, widen this
+  # deliberately — do not go back to `(.*)`.
   bijouxlabs.override: |
     rewrite stop {
-      name regex (.*)\.bijouxlabs\.cc traefik.traefik.svc.cluster.local
+      name regex ^[^.]+\.bijouxlabs\.cc\.?$ traefik.traefik.svc.cluster.local
       answer auto
     }
