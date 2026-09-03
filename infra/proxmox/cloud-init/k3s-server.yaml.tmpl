@@ -38,6 +38,26 @@ runcmd:
   # (storage nodes only — masters hold the NVMe replicas).
   - modprobe dm_crypt
   - printf 'dm_crypt\n' > /etc/modules-load.d/longhorn.conf
+  # Strip the DNS search domain that Proxmox cloud-init inherits from the
+  # HYPERVISOR's /etc/resolv.conf (every node0*.bijouxlabs.cc host carries
+  # `search bijouxlabs.cc`). The VM has no `searchdomain` of its own, so it
+  # silently picks up the host's — and only cloud-init-built nodes do, which
+  # is why the older hand-built masters were never affected.
+  #
+  # Left in place it is a live trap: kubelet copies the node search list into
+  # every pod, pods default to ndots:5, so ANY external hostname with fewer
+  # than 5 dots is tried as `<name>.bijouxlabs.cc` FIRST. VyOS answers that
+  # wildcard with the Traefik VIP, so the pod connects to Traefik and gets a
+  # `*.bijouxlabs.cc` certificate instead of the real host. That silently
+  # broke every Longhorn B2 backup taken on kmaster04/kmaster05 for weeks
+  # (x509: certificate is valid for *.bijouxlabs.cc, not s3...backblazeb2.com)
+  # and would hijack any other external host with <5 dots.
+  #
+  # Diagnose with `getent hosts <name>`, NEVER `nslookup` — nslookup queries
+  # the FQDN directly, skips search expansion, and reports the right answer
+  # while every real client gets the wrong one.
+  - nmcli con mod "cloud-init eth0" ipv4.dns-search "" || true
+  - nmcli dev reapply eth0 || true
   # guest agent so Terraform/bpg can read the VM's IP and settle the clone
   - systemctl enable --now qemu-guest-agent
   # Join the existing HA cluster as an additional control-plane (server) node.
