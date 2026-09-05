@@ -30,7 +30,7 @@ spec:
         # config already exists on the PVC and must NOT be regenerated, or every
         # restart would mint new secrets and lock you out of your own data.
         - name: init
-          image: owncloud/ocis:8.1.0
+          image: owncloud/ocis:8.2.0
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -63,7 +63,7 @@ spec:
               name: tmp
       containers:
         - name: ocis
-          image: owncloud/ocis:8.1.0
+          image: owncloud/ocis:8.2.0
           args: ["server"]
           securityContext:
             allowPrivilegeEscalation: false
