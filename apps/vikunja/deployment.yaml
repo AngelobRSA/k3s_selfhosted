@@ -21,7 +21,7 @@ spec:
         runAsGroup: 1000
       containers:
         - name: vikunja
-          image: vikunja/vikunja:2.4.0
+          image: vikunja/vikunja:2.6.0
           securityContext:
             allowPrivilegeEscalation: false
           ports:
