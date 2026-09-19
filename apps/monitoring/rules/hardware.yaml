@@ -160,6 +160,116 @@ spec:
               Drive has consumed {{ $value }}% of its rated write endurance.
               Plan a replacement; not urgent.
 
+        # ---- SATA/ATA drives ----------------------------------------------
+        # Every alert above reads an NVMe-only metric (critical_warning,
+        # media_errors, available_spare, percentage_used). The SATA SSDs that
+        # hold pve-root and EVERY VM's root disk expose none of them, so they
+        # had no health alerting at all — the rules simply matched no series,
+        # which reads identically to "all clear". Same fail-open shape as the
+        # dead rules in docs; these use smartctl_device_attribute instead.
+        # Verified against live series on node0{1,2,3,5}m910/sda, 2026-09-19.
+
+        # The catch-all, and the one that fails CLOSED: the drive's own
+        # prefailure attributes compared against the drive's own thresholds.
+        # Matches 1:1 on attribute_id, so no group_left and no duplicate-series
+        # error during exporter rollouts.
+        - alert: SmartSataPrefailAttribute
+          expr: |
+            smartctl_device_attribute{attribute_value_type="value",attribute_flags_long=~".*prefailure.*"}
+              <= on(instance,nodename,device,attribute_id)
+            smartctl_device_attribute{attribute_value_type="thresh"}
+          for: 15m
+          labels:
+            severity: critical
+            component: disk
+          annotations:
+            summary: "SMART prefail {{ $labels.attribute_name }} on {{ $labels.nodename }} {{ $labels.device }}"
+            description: >-
+              Normalised value {{ $value }} has reached the drive's own failure
+              threshold for {{ $labels.attribute_name }}. This is the drive
+              declaring the attribute failed. Replace it.
+
+        # ⚠️ Attribute NAMES differ by vendor. The Samsung DC parts on
+        # node0{1,2,5} and the drive on `proxmox` share almost no vocabulary,
+        # so every rule below matches on a regex covering both spellings —
+        # pinning one literal name would silently skip a host, and `proxmox`
+        # is the one carrying vyosGateway. Verified 2026-09-19: node0{1,2,5}
+        # expose 17 attributes, proxmox a different 18.
+
+        # An SSD that starts remapping is on its way out. Enterprise SATA parts
+        # sit at exactly 0 for years, so any non-zero value is real signal.
+        # Current_Pending_Sector (proxmox's drive) is the more urgent of the
+        # two — a sector that failed to read and has not yet been remapped.
+        - alert: SmartSataReallocatedSectors
+          expr: smartctl_device_attribute{attribute_name=~"Reallocated_Sector_Ct|Current_Pending_Sector|Reallocated_Event_Count",attribute_value_type="raw"} > 0
+          for: 15m
+          labels:
+            severity: warning
+            component: disk
+          annotations:
+            summary: "{{ $value }} reallocated sectors on {{ $labels.nodename }} {{ $labels.device }}"
+            description: >-
+              The drive has remapped {{ $value }} sectors. On an SSD this is the
+              earliest honest warning of NAND wear or a failing controller.
+              Check Used_Rsvd_Blk_Cnt_Tot and plan a replacement.
+
+        - alert: SmartSataUncorrectableErrors
+          expr: increase(smartctl_device_attribute{attribute_name=~"Uncorrectable_Error_Cnt|Reported_Uncorrect|Offline_Uncorrectable",attribute_value_type="raw"}[6h]) > 0
+          for: 0m
+          labels:
+            severity: critical
+            component: disk
+          annotations:
+            summary: "New uncorrectable errors on {{ $labels.nodename }} {{ $labels.device }}"
+            description: >-
+              {{ $value }} new uncorrectable read errors in 6h. Data has been
+              lost. Treat any filesystem on this drive as suspect.
+
+        # Attribute 199. Non-zero means the SATA link is corrupting data in
+        # flight — nearly always the cable or a reseat, not the drive.
+        - alert: SmartSataCrcErrors
+          expr: increase(smartctl_device_attribute{attribute_name=~"(UDMA_)?CRC_Error_Count",attribute_value_type="raw"}[6h]) > 0
+          for: 0m
+          labels:
+            severity: warning
+            component: disk
+          annotations:
+            summary: "New SATA CRC errors on {{ $labels.nodename }} {{ $labels.device }}"
+            description: >-
+              {{ $value }} new interface CRC errors in 6h. Suspect the SATA or
+              power cable before the drive — reseat both ends.
+
+        # Normalised Wear_Leveling_Count counts DOWN from 100 toward the
+        # drive's threshold (5 on these Samsung DC parts). 20 leaves plenty of
+        # runway to order a replacement.
+        - alert: SmartSataWearoutHigh
+          expr: smartctl_device_attribute{attribute_name=~"Wear_Leveling_Count|Media_Wearout_Indicator",attribute_value_type="value"} < 20
+          for: 1h
+          labels:
+            severity: warning
+            component: disk
+          annotations:
+            summary: "SATA SSD life at {{ $value }}% on {{ $labels.nodename }} {{ $labels.device }}"
+            description: >-
+              Normalised wear-levelling value is {{ $value }} (100 = new). The
+              drive is near the end of its rated endurance; plan a replacement.
+
+        # Attribute 235. These hosts run without a UPS, and a rising count is
+        # the only persistent record that a box lost power or hard-reset —
+        # the event that corrupts guest filesystems.
+        - alert: SmartSataUnexpectedPowerLoss
+          expr: increase(smartctl_device_attribute{attribute_name=~"POR_Recovery_Count|Power-Off_Retract_Count",attribute_value_type="raw"}[24h]) > 0
+          for: 0m
+          labels:
+            severity: warning
+            component: disk
+          annotations:
+            summary: "{{ $labels.nodename }} lost power uncleanly ({{ $labels.device }})"
+            description: >-
+              POR_Recovery_Count rose by {{ $value }} in 24h — the drive lost
+              power without a flush. Expect dirty filesystems on that host's
+              guests; check dmesg on each VM for metadata corruption.
+
     # Capacity. Root filesystems only — /boot is statically 50-65% everywhere
     # and tmpfs/fuse mounts are not real storage.
     - name: bijouxlabs.capacity
