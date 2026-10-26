@@ -57,32 +57,44 @@ metadata:
   annotations:
     kustomize.toolkit.fluxcd.io/prune: disabled
     kustomize.toolkit.fluxcd.io/ssa: merge
----
-apiVersion: v1
-kind: Node
-metadata:
-  name: kmaster02
-  labels:
-    topology.kubernetes.io/zone: node02m910
-  annotations:
-    kustomize.toolkit.fluxcd.io/prune: disabled
-    kustomize.toolkit.fluxcd.io/ssa: merge
-spec:
-  # See kmaster01 for why this is declared on every master.
-  taints:
-    - key: node-role.kubernetes.io/control-plane
-      value: "true"
-      effect: NoSchedule
----
-apiVersion: v1
-kind: Node
-metadata:
-  name: kworker02
-  labels:
-    topology.kubernetes.io/zone: node02m910
-  annotations:
-    kustomize.toolkit.fluxcd.io/prune: disabled
-    kustomize.toolkit.fluxcd.io/ssa: merge
+# 🔴 kmaster02 + kworker02 PARKED (2026-10-26) — node02m910 is powered off
+# pending a memtest. Their Node objects were deleted (which also removed
+# kmaster02 from etcd), and these stubs are commented out because Flux would
+# otherwise re-create them as kubelet-less phantom Nodes, stuck NotReady, which
+# keeps every DaemonSet rollout (and the kube-prometheus-stack Helm wait) from
+# ever completing.
+#
+# Before powering node02 back on: uncomment both, AND on kmaster02 move
+# /var/lib/rancher/k3s/server/db/etcd aside so it joins as a NEW member
+# (its old member ID is gone). Re-adding the stubs also restores the
+# control-plane taint — without it kmaster02 rejoins schedulable.
+#
+# ---
+# apiVersion: v1
+# kind: Node
+# metadata:
+#   name: kmaster02
+#   labels:
+#     topology.kubernetes.io/zone: node02m910
+#   annotations:
+#     kustomize.toolkit.fluxcd.io/prune: disabled
+#     kustomize.toolkit.fluxcd.io/ssa: merge
+# spec:
+#   # See kmaster01 for why this is declared on every master.
+#   taints:
+#     - key: node-role.kubernetes.io/control-plane
+#       value: "true"
+#       effect: NoSchedule
+# ---
+# apiVersion: v1
+# kind: Node
+# metadata:
+#   name: kworker02
+#   labels:
+#     topology.kubernetes.io/zone: node02m910
+#   annotations:
+#     kustomize.toolkit.fluxcd.io/prune: disabled
+#     kustomize.toolkit.fluxcd.io/ssa: merge
 ---
 apiVersion: v1
 kind: Node
