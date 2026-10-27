@@ -16,6 +16,7 @@ resources:
   - karakeep
   - stefhq
   - ntfy
+  - dumbpad
   - vikunja
   - actualbudget
   - logging

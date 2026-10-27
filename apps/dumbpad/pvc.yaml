@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dumbpad-data
+  namespace: dumbpad
+spec:
+  accessModes:
+    - ReadWriteOnce
+  # longhorn-nvme = 2 replicas, and the volume lands in the `default`
+  # recurring-job group, so it's in the daily B2 backup. Notes are plain
+  # files, so 1Gi is plenty.
+  storageClassName: longhorn-nvme
+  resources:
+    requests:
+      storage: 1Gi

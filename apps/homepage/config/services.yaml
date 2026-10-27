@@ -14,6 +14,11 @@
         description: Document store
         icon: paperless.png
         siteMonitor: https://paperless.bijouxlabs.cc
+    - DumbPad:
+        href: https://pad.bijouxlabs.cc
+        description: Notes & scratchpad
+        icon: dumbpad.png
+        siteMonitor: https://pad.bijouxlabs.cc
     - Karakeep:
         href: https://karakeep.bijouxlabs.cc
         description: Bookmarks & read-later

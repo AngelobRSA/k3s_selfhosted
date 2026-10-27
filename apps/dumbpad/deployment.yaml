@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dumbpad
+  namespace: dumbpad
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: dumbpad
+  template:
+    metadata:
+      labels:
+        app: dumbpad
+    spec:
+      # The image runs as the `node` user (uid 1000) and chowns /app/data at
+      # build time. fsGroup makes the fresh Longhorn volume writable for it.
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: dumbpad
+          image: dumbwareio/dumbpad:1.0.5
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: TZ
+              value: Africa/Johannesburg
+            - name: SITE_TITLE
+              value: DumbPad
+            - name: BASE_URL
+              value: https://pad.bijouxlabs.cc
+            # No DUMBPAD_PIN: LAN/tailnet only, same as opengist was. If the
+            # host is ever published through the Cloudflare tunnel, add a PIN
+            # from a SOPS secret first.
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          # Starting point until Goldilocks has samples. It's a small Node app.
+          resources:
+            requests:
+              cpu: 10m
+              memory: 96Mi
+            limits:
+              memory: 256Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: dumbpad-data
