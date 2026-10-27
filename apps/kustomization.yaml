@@ -6,7 +6,6 @@ resources:
   - homepage
   - monitoring
   - immich
-  - opengist
   - uptime-kuma
   - vaultwarden
   - radar
@@ -16,7 +15,6 @@ resources:
   - primecrunch
   - karakeep
   - stefhq
-  - ocis
   - ntfy
   - vikunja
   - actualbudget

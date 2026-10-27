@@ -37,16 +37,6 @@ replacements:
   - source:
       kind: ConfigMap
       name: bijouxlabs-replacements
-      fieldPath: data.LB_IP_OPENGIST
-    targets:
-      - select:
-          kind: Service
-          name: opengist
-        fieldPaths:
-          - metadata.annotations.metallb\.universe\.tf/loadBalancerIPs
-  - source:
-      kind: ConfigMap
-      name: bijouxlabs-replacements
       fieldPath: data.LB_IP_TRAEFIK
     targets:
       - select:
@@ -78,17 +68,6 @@ replacements:
   - source:
       kind: ConfigMap
       name: bijouxlabs-replacements
-      fieldPath: data.DOMAIN_OPENGIST
-    targets:
-      - select:
-          kind: Ingress
-          name: opengist
-        fieldPaths:
-          - spec.rules.0.host
-          - spec.tls.0.hosts.0
-  - source:
-      kind: ConfigMap
-      name: bijouxlabs-replacements
       fieldPath: data.DOMAIN_HOMEASSISTANT
     targets:
       - select:
@@ -114,11 +93,6 @@ replacements:
       name: bijouxlabs-replacements
       fieldPath: data.NAMESPACE_APPLICATIONS
     targets:
-      - select:
-          kind: Service
-          name: opengist
-        fieldPaths:
-          - metadata.namespace
       - select:
           kind: Service
           name: homeassistant
@@ -151,22 +125,3 @@ replacements:
           kind: Ingress
         fieldPaths:
           - spec.ingressClassName
-
-  # Domain Configuration - OpenGist
-  - source:
-      kind: ConfigMap
-      name: bijouxlabs-replacements
-      fieldPath: data.DOMAIN_OPENGIST
-    targets:
-      - select:
-          kind: Ingress
-          name: opengist
-        fieldPaths:
-          - spec.rules.0.host
-          - spec.tls.0.hosts.0
-      - select:
-          kind: Deployment
-          name: opengist
-        fieldPaths:
-          - spec.template.spec.containers.0.env.[name=domain].value
-

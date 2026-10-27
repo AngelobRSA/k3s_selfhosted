@@ -4,11 +4,6 @@
         description: Photo management & facial recognition
         icon: immich.png
         siteMonitor: https://photos.bijouxlabs.cc
-    - OCIS:
-        href: https://drive.bijouxlabs.cc
-        description: Self-hosted drive & file sync
-        icon: owncloud.png
-        siteMonitor: https://drive.bijouxlabs.cc
     - Copyparty:
         href: https://files.bijouxlabs.cc
         description: Fileshare
@@ -19,11 +14,6 @@
         description: Document store
         icon: paperless.png
         siteMonitor: https://paperless.bijouxlabs.cc
-    - Opengist:
-        href: https://opengist.bijouxlabs.cc
-        description: Notes & Gists
-        icon: opengist.png
-        siteMonitor: https://opengist.bijouxlabs.cc
     - Karakeep:
         href: https://karakeep.bijouxlabs.cc
         description: Bookmarks & read-later

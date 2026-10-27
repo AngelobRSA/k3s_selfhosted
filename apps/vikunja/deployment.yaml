@@ -4,7 +4,8 @@ metadata:
   name: vikunja
   namespace: vikunja
 spec:
-  replicas: 1
+  # Parked 2026-10-27: unused. Data PVC kept (still in the daily backup).
+  replicas: 0
   selector:
     matchLabels:
       app: vikunja
