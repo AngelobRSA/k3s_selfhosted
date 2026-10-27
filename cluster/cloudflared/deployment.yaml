@@ -4,9 +4,9 @@ metadata:
   name: cloudflared
   namespace: cloudflared
 spec:
-  # Scaled to 0: the only consumer (stefhq) is not publicly cut over yet and is
-  # itself scaled to 0. Manifests kept in place for a fast re-enable at cutover.
-  replicas: 0
+  # Two connectors on different hypervisors: the tunnel is the only way in
+  # from outside, so it shouldn't share a fate with any one host.
+  replicas: 2
   selector:
     matchLabels:
       app: cloudflared
@@ -15,16 +15,24 @@ spec:
       labels:
         app: cloudflared
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: cloudflared
       containers:
         - name: cloudflared
-          image: cloudflare/cloudflared:latest
-          args: ["tunnel", "--no-autoupdate", "run"]
-          env:
-            - name: TUNNEL_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: cloudflared-secret
-                  key: TUNNEL_TOKEN
+          image: cloudflare/cloudflared:2026.10.4
+          args: ["tunnel", "--config", "/etc/cloudflared/config/config.yaml", "run"]
+          volumeMounts:
+            - name: config
+              mountPath: /etc/cloudflared/config
+              readOnly: true
+            - name: creds
+              mountPath: /etc/cloudflared/creds
+              readOnly: true
           resources:
             requests:
               cpu: 50m
@@ -37,3 +45,10 @@ spec:
               port: 2000
             initialDelaySeconds: 10
             periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: cloudflared-config
+        - name: creds
+          secret:
+            secretName: cloudflared-credentials

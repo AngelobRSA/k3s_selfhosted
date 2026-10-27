@@ -1,0 +1,19 @@
+# Locally-managed tunnel: this file is the source of truth, not the
+# Cloudflare dashboard. Tunnel "bijouxlabs-k3s".
+tunnel: cd418498-fee3-4372-9a4a-d4b658408267
+credentials-file: /etc/cloudflared/creds/credentials.json
+metrics: 0.0.0.0:2000
+no-autoupdate: true
+
+ingress:
+  # Everything goes to Traefik's websecure entrypoint, the same path LAN
+  # clients take. matchSNItoHost sends each request's own hostname as SNI,
+  # so Traefik serves the right cert and routes it as if it came from the LAN.
+  # Access (default deny, *.bijouxlabs.cc) and the ZA-only WAF rule run at
+  # the edge, before any of this.
+  - hostname: "*.bijouxlabs.cc"
+    service: https://traefik.traefik.svc.cluster.local:443
+    originRequest:
+      matchSNItoHost: true
+      http2Origin: true
+  - service: http_status:404
