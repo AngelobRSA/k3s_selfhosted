@@ -15,6 +15,7 @@ resources:
   - cilium
   - traefik
   - cloudflared
+  - warp-beacon
   - longhorn
   - cnpg
   - goldilocks

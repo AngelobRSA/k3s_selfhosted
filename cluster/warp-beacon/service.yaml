@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: warp-beacon
+  namespace: warp-beacon
+  annotations:
+    # Freed by opengist 2026-10-27. Cloudflare's managed-network config
+    # points at this exact address, so don't move it without updating that.
+    metallb.universe.tf/loadBalancerIPs: 192.168.0.162
+spec:
+  type: LoadBalancer
+  selector:
+    app: warp-beacon
+  ports:
+    - name: tls
+      port: 443
+      targetPort: tls
