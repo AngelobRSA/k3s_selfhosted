@@ -30,6 +30,11 @@ metadata:
   name: lilliput
   namespace: flux-system
 spec:
+  # Parked 2026-10-28: the watcher CronJob never succeeded and the idea didn't
+  # pan out in practice. Watcher suspended, board at 0, DB left running.
+  # To revisit: drop this line; Flux restores board replicas, but the watcher's
+  # suspend was a kubectl patch, so unsuspend it by hand.
+  suspend: true
   interval: 10m
   # ./deploy/board, NOT ./deploy. The board alpha only: Postgres, the board
   # service and a LAN ingress. That repo also declares a mint, a rate job and
