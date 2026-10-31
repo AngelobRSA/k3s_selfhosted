@@ -24,6 +24,14 @@ spec:
         namespace: flux-system
   interval: 30m
   values:
+    # 🔴 Chart >=1.11 defaults restrictInternalTraffic: true, which creates
+    # "internal" NetworkPolicies EVEN WITH enabled: false. The instance-manager
+    # policy only admits Longhorn pods, but the iSCSI initiator runs on the HOST
+    # (Cilium "host" entity), so every FRESH attach hung on longhorn-iscsi.lock.
+    # Live-upgraded volumes kept working, which hid it. 2026-10-31.
+    networkPolicies:
+      enabled: false
+      restrictInternalTraffic: false
     defaultSettings:
       # 2 -> 3 on 2026-08-22. The 2-replica policy was a correct response to a
       # THREE-zone cluster: with hard zone anti-affinity, a 3-replica volume
