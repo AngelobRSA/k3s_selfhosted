@@ -15,6 +15,9 @@ spec:
         name: grafana
         namespace: flux-system
   interval: 30m
+  # 13-node DaemonSet rolls one pod at a time, ~40s each. The 5m default
+  # times out mid-rollout on every upgrade.
+  timeout: 15m
   values:
     fullnameOverride: alloy
 
