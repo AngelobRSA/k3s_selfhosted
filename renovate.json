@@ -4,26 +4,48 @@
     "config:recommended"
   ],
   "flux": {
-    "enabled": true
-  },
-  "kubernetes": {
-    "fileMatch": [
-      "apps/.+\\.yaml$",
-      "cluster/.+\\.yaml$"
+    "managerFilePatterns": [
+      "/(?:^|/)gotk-components\\.ya?ml$/",
+      "/^apps/.+\\.ya?ml$/",
+      "/^cluster/.+\\.ya?ml$/"
     ]
   },
-  "prConcurrentLimit": 5,
+  "kubernetes": {
+    "managerFilePatterns": [
+      "/^apps/.+\\.ya?ml$/",
+      "/^cluster/.+\\.ya?ml$/"
+    ]
+  },
+  "prConcurrentLimit": 8,
   "packageRules": [
     {
+      "description": "Cluster infra: one PR per package, never automerge.",
       "matchFileNames": ["cluster/**"],
-      "groupName": "Cluster infra",
       "automerge": false
     },
     {
+      "description": "Charts that must be upgraded one minor at a time get one PR per minor (Cilium, Longhorn, cert-manager, CNPG).",
+      "matchPackageNames": ["cilium", "longhorn", "cert-manager", "cloudnative-pg"],
+      "separateMultipleMinor": true
+    },
+    {
+      "description": "Flux components are versioned by the flux2 manager only, so the kubernetes manager doesn't open duplicate PRs for gotk-components.",
+      "matchManagers": ["kubernetes"],
+      "matchPackageNames": ["ghcr.io/fluxcd/**"],
+      "enabled": false
+    },
+    {
+      "description": "Flux 2.9 needs k8s >= 1.34 and 2.10 needs >= 1.35.2. The cluster runs k3s 1.33, so remove this cap once k3s has been upgraded.",
+      "matchPackageNames": ["fluxcd/flux2"],
+      "allowedVersions": "<2.9.0"
+    },
+    {
+      "description": "Apps: minor and patch updates are grouped and automerged. The repo has no CI, so ignoreTests stops Renovate waiting for status checks that will never arrive.",
       "matchFileNames": ["apps/**"],
+      "matchUpdateTypes": ["minor", "patch"],
       "groupName": "Apps",
       "automerge": true,
-      "matchUpdateTypes": ["minor", "patch"]
+      "ignoreTests": true
     }
   ]
 }

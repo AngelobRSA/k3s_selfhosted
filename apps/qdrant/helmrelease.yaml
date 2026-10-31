@@ -17,6 +17,7 @@ spec:
   chart:
     spec:
       chart: qdrant
+      version: "1.20.0"
       sourceRef:
         kind: HelmRepository
         name: qdrant
