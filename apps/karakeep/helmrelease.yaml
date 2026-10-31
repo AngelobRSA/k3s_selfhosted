@@ -34,6 +34,8 @@ spec:
             app.kubernetes.io/component: application
         containers:
           app:
+            securityContext:
+              allowPrivilegeEscalation: false
             image:
               repository: ghcr.io/karakeep-app/karakeep
               tag: 0.34.1@sha256:69ae5315c618b7c14c1af3e34c6e211acdb231793af424ecd1cab0b70691d987
@@ -102,6 +104,7 @@ spec:
               - --remote-debugging-port=9222
               - --hide-scrollbars
             securityContext:
+              allowPrivilegeEscalation: false
               capabilities:
                 drop:
                   - ALL
@@ -133,6 +136,8 @@ spec:
                   topologyKey: kubernetes.io/hostname
         containers:
           app:
+            securityContext:
+              allowPrivilegeEscalation: false
             image:
               repository: docker.io/getmeili/meilisearch
               tag: v1.56.0@sha256:1f578fa865f8251894b3bf38d6668d6209a3f451f8f65ab953e129d4c1db5ef4
@@ -158,6 +163,8 @@ spec:
       redis:
         containers:
           redis:
+            securityContext:
+              allowPrivilegeEscalation: false
             image:
               repository: docker.io/valkey/valkey
               tag: "8.1.11"

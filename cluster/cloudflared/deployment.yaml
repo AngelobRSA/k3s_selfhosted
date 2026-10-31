@@ -25,6 +25,8 @@ spec:
       containers:
         - name: cloudflared
           image: cloudflare/cloudflared:2026.10.7
+          securityContext:
+            allowPrivilegeEscalation: false
           args: ["tunnel", "--config", "/etc/cloudflared/config/config.yaml", "run"]
           volumeMounts:
             - name: config

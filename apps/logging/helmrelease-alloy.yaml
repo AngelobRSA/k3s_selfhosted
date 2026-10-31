@@ -41,6 +41,8 @@ spec:
         - operator: Exists
 
     alloy:
+      securityContext:
+        allowPrivilegeEscalation: false
       configMap:
         # Use the hash-suffixed ConfigMap from kustomization.yaml instead of
         # the chart's own. The hash suffix is what makes an edit to

@@ -36,7 +36,16 @@ spec:
     # Key names verified against the 1.17.x chart values (replicaCount at the
     # top level, and separately under webhook/cainjector) — NOT `replicas`.
     replicaCount: 2
+    podDisruptionBudget:
+      enabled: true
+      maxUnavailable: 1
     webhook:
       replicaCount: 2
+      podDisruptionBudget:
+        enabled: true
+        maxUnavailable: 1
     cainjector:
       replicaCount: 2
+      podDisruptionBudget:
+        enabled: true
+        maxUnavailable: 1

@@ -29,6 +29,8 @@ spec:
     # WebSocket live-sync, WebAuthn/FIDO2 2FA, and correct email/attachment links.
     domain: "https://vaultwarden.bijouxlabs.cc"
 
+    securityContext:
+      allowPrivilegeEscalation: false
     image:
       tag: "1.36.0"
 

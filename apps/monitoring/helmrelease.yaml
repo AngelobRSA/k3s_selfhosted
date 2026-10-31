@@ -152,6 +152,10 @@ spec:
             memory: 4Gi
 
     alertmanager:
+      # chart defaults minAvailable: 1. Do NOT also set maxUnavailable: the
+      # chart renders both and the API rejects the PDB.
+      podDisruptionBudget:
+        enabled: true
       alertmanagerSpec:
         # HA 2026-08-10. Alertmanager clusters natively over gossip and
         # DEDUPLICATES notifications across replicas, so 2 pods do NOT mean 2

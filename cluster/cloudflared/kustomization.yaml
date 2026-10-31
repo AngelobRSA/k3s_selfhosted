@@ -4,6 +4,7 @@ resources:
   - namespace.yaml
   - secrets/tunnel-credentials.sops.yaml
   - deployment.yaml
+  - pdb.yaml
 
 # Hash-suffixed so a config edit rolls the pods.
 configMapGenerator:

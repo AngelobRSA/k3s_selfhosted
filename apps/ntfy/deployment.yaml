@@ -27,6 +27,8 @@ spec:
       containers:
         - name: ntfy
           image: binwiederhier/ntfy:v2.35.0
+          securityContext:
+            allowPrivilegeEscalation: false
           args: ["serve"]
           ports:
             - name: http

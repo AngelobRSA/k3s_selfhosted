@@ -30,6 +30,8 @@ spec:
       paperless:
         containers:
           app:
+            securityContext:
+              allowPrivilegeEscalation: false
             image:
               repository: ghcr.io/paperless-ngx/paperless-ngx
               tag: "2.20.15"
@@ -83,6 +85,8 @@ spec:
       redis:
         containers:
           redis:
+            securityContext:
+              allowPrivilegeEscalation: false
             image:
               repository: docker.io/valkey/valkey
               tag: "8.1.11"
@@ -96,6 +100,8 @@ spec:
       tika:
         containers:
           tika:
+            securityContext:
+              allowPrivilegeEscalation: false
             image:
               repository: docker.io/apache/tika
               tag: "3.3.3.0-full"
@@ -109,6 +115,8 @@ spec:
       gotenberg:
         containers:
           gotenberg:
+            securityContext:
+              allowPrivilegeEscalation: false
             image:
               repository: docker.io/gotenberg/gotenberg
               tag: "8"

@@ -5,6 +5,7 @@ resources:
   - namespace.yaml
   - secrets/beacon-tls.sops.yaml
   - deployment.yaml
+  - pdb.yaml
   - service.yaml
 
 configMapGenerator:

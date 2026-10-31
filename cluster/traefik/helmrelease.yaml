@@ -44,6 +44,9 @@ spec:
       # to announce 192.168.0.169, so replica count is now availability, not
       # just capacity.
       replicas: 3
+    podDisruptionBudget:
+      enabled: true
+      maxUnavailable: 1
     resources:
       requests:
         cpu: 10m

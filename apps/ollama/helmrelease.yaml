@@ -34,7 +34,8 @@ spec:
     # PVC there — so your UID choice and any readOnlyRootFilesystem decision have to
     # keep that path (and /tmp) writable. Fill in both blocks below.
     podSecurityContext: {}
-    securityContext: {}
+    securityContext:
+      allowPrivilegeEscalation: false  # rest of the TODO above still open
 
     ollama:
       gpu:

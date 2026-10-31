@@ -25,6 +25,8 @@ spec:
       containers:
         - name: dumbpad
           image: dumbwareio/dumbpad:1.0.5
+          securityContext:
+            allowPrivilegeEscalation: false
           ports:
             - name: http
               containerPort: 3000
