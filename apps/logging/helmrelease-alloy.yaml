@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: alloy
-      version: "1.12.0"
+      version: "1.15.0"
       sourceRef:
         kind: HelmRepository
         # Defined alongside the Loki HelmRelease in helmrelease-loki.yaml.
