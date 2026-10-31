@@ -26,6 +26,10 @@ spec:
   timeout: 10m
   values:
     replicaCount: 1
+    # RWO volume: RollingUpdate deadlocks (Multi-Attach) because the new pod
+    # can't attach the volume while the old pod still holds it.
+    strategy:
+      type: Recreate
 
     # Actual Budget is local-first: the server is a sync target, and the
     # authoritative copy also lives in each browser. That makes it unusually

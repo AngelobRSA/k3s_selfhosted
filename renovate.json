@@ -46,6 +46,19 @@
       "groupName": "Apps",
       "automerge": true,
       "ignoreTests": true
+    },
+    {
+      "description": "...except where 'minor' can still break things: 0.x versions (a minor bump there is effectively a major) and stateful datastores with on-disk formats. On 2026-10-31 immich chart 0.10→0.13 and meilisearch 1.48→1.56 were automerged and broke.",
+      "matchFileNames": ["apps/**"],
+      "matchCurrentVersion": "/^v?0\\./",
+      "groupName": "Apps (review)",
+      "automerge": false
+    },
+    {
+      "matchFileNames": ["apps/**"],
+      "matchPackageNames": ["**/meilisearch", "**/redis", "**/valkey**", "**/postgres**", "**/mariadb", "**/mongo**", "redis", "postgres"],
+      "groupName": "Apps (review)",
+      "automerge": false
     }
   ]
 }
