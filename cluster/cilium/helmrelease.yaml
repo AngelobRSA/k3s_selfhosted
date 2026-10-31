@@ -17,17 +17,33 @@ spec:
   chart:
     spec:
       chart: cilium
-      version: "1.15.19"
+      version: "1.16.19"
       sourceRef:
         kind: HelmRepository
         name: cilium
         namespace: flux-system
   interval: 30m
-  timeout: 10m
+  # 13-node DaemonSet rolling 2 at a time.
+  timeout: 20m
   values:
+    # 🔴 Cilium minors must be upgraded ONE AT A TIME (1.15 → 1.16 → … → 1.20);
+    # it's the only tested path. Run the pre-flight check before each hop.
+    # Keep the defaults of the version this cluster was installed with
+    # (1.15.6), e.g. Envoy stays embedded in the agent instead of becoming a
+    # new DaemonSet.
+    upgradeCompatibility: "1.15"
+
+    # ⚠️ Points at kmaster01 directly, not the VIP: while kmaster01's API is
+    # down, NEW pods can't get endpoints (existing traffic is unaffected).
     k8sServiceHost: 192.168.0.154
     k8sServicePort: 6443
-    kubeProxyReplacement: disabled
+    # kube-proxy (k3s-embedded) handles Services. Was "disabled", a spelling
+    # newer charts no longer accept.
+    kubeProxyReplacement: false
+
+    # MetalLB owns LoadBalancer IPs. Since 1.17 Cilium LB-IPAM claims
+    # class-less LoadBalancer Services by default; keep it out of the way.
+    defaultLBServiceIPAM: none
 
     hubble:
       enabled: true
