@@ -7,7 +7,7 @@ spec:
   interval: 12h
   url: oci://ghcr.io/immich-app/immich-charts/immich
   ref:
-    tag: "0.10.3"  # held: 0.13 fails values-schema validation, needs its own migration
+    tag: "0.13.4"  # held: 0.13 fails values-schema validation, needs its own migration
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
