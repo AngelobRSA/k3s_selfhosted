@@ -148,6 +148,41 @@ spec:
               Drive is close to throttling or shutdown. NVMe controllers
               self-throttle around 80°C and the host may hang before that.
 
+        # Thresholds follow each CPU's own crit, because the fleet differs by 25°C:
+        # m910s report crit 80, m920s 100, and `proxmox` 105. The flat 85 catches the
+        # high-crit hosts well before they matter, which is where the router lives.
+        # sensor="temp1" is "Package id 0" on these hosts. node04 reports nothing
+        # while its management plane is wedged, so these cannot cover it.
+        - alert: CpuTemperatureWarning
+          expr: |
+            node_hwmon_temp_celsius{job="proxmox-node-exporter",chip=~".*coretemp.*",sensor="temp1"} >= 85
+              or
+            node_hwmon_temp_celsius{job="proxmox-node-exporter",chip=~".*coretemp.*",sensor="temp1"}
+              >= (node_hwmon_temp_crit_celsius{job="proxmox-node-exporter",chip=~".*coretemp.*",sensor="temp1"} - 10)
+          for: 15m
+          labels:
+            severity: warning
+            component: thermal
+          annotations:
+            summary: "CPU on {{ $labels.nodename }} at {{ $value }}°C for 15m"
+            description: >-
+              Sustained CPU package temperature, within 10°C of this CPU's crit or
+              above 85°C. Load here is usually low, so suspect ambient heat first.
+
+        - alert: CpuTemperatureCritical
+          expr: |
+            node_hwmon_temp_celsius{job="proxmox-node-exporter",chip=~".*coretemp.*",sensor="temp1"}
+              >= (node_hwmon_temp_crit_celsius{job="proxmox-node-exporter",chip=~".*coretemp.*",sensor="temp1"} - 5)
+          for: 5m
+          labels:
+            severity: critical
+            component: thermal
+          annotations:
+            summary: "CPU on {{ $labels.nodename }} at {{ $value }}°C, near its crit"
+            description: >-
+              Within 5°C of this CPU's crit temperature for 5m. Expect throttling,
+              then a thermal shutdown. Consider barebones mode (see the runbooks).
+
         - alert: SmartWearoutHigh
           expr: smartctl_device_percentage_used > 90
           for: 1h
@@ -274,38 +309,46 @@ spec:
     # and tmpfs/fuse mounts are not real storage.
     - name: bijouxlabs.capacity
       rules:
+        # Free space, not percent used: root disks here run 19, 32 and 66 GB. A flat
+        # 75% paged the 66 GB workers with 16 GB free and stayed silent on a 19 GB
+        # master holding etcd with 5.6 GB free.
+        # 15% is the kubelet's image GC trigger, so on larger disks the warning means
+        # GC has not kept up. On the 19 GB masters the 4 GB floor fires before GC does.
+        # kubelet evicts at 5% free, so the critical floors stay above that.
+        # Short `for`: GC recovers these fast. On 2026-10-31 the worst stretch was 8m
+        # at warning level and 6m at critical, so a 15m wait would have missed all of it.
         - alert: HostRootDiskSpaceLow
           expr: |
-            100 * (
-              1 - node_filesystem_avail_bytes{mountpoint="/", fstype=~"ext4|xfs|btrfs"}
-                / node_filesystem_size_bytes{mountpoint="/", fstype=~"ext4|xfs|btrfs"}
-            ) >= 75
-          for: 15m
+            node_filesystem_avail_bytes{mountpoint="/", fstype=~"ext4|xfs|btrfs"} < 4e9
+              or
+            node_filesystem_avail_bytes{mountpoint="/", fstype=~"ext4|xfs|btrfs"}
+              < 0.15 * node_filesystem_size_bytes{mountpoint="/", fstype=~"ext4|xfs|btrfs"}
+          for: 5m
           labels:
             severity: warning
             component: disk
           annotations:
-            summary: "Root filesystem {{ $value | printf \"%.0f\" }}% full on {{ $labels.nodename }}{{ $labels.instance }}"
+            summary: "Root filesystem has {{ $value | humanize }}B free on {{ $labels.nodename }}{{ $labels.instance }}"
             description: >-
-              The OS disk is at or above 75% capacity. The k3s VMs run 32Gi
-              root disks with little headroom, and a full root disk takes
-              kubelet and containerd down with it.
+              Under 4 GB or 15% free on the OS disk. Usually images piling up
+              during a burst of upgrades. Etcd lives on this disk on masters, and
+              a full root disk takes kubelet and containerd down with it.
 
         - alert: HostRootDiskSpaceCritical
           expr: |
-            100 * (
-              1 - node_filesystem_avail_bytes{mountpoint="/", fstype=~"ext4|xfs|btrfs"}
-                / node_filesystem_size_bytes{mountpoint="/", fstype=~"ext4|xfs|btrfs"}
-            ) >= 90
-          for: 5m
+            node_filesystem_avail_bytes{mountpoint="/", fstype=~"ext4|xfs|btrfs"} < 2e9
+              or
+            node_filesystem_avail_bytes{mountpoint="/", fstype=~"ext4|xfs|btrfs"}
+              < 0.08 * node_filesystem_size_bytes{mountpoint="/", fstype=~"ext4|xfs|btrfs"}
+          for: 2m
           labels:
             severity: critical
             component: disk
           annotations:
-            summary: "Root filesystem {{ $value | printf \"%.0f\" }}% full on {{ $labels.nodename }}{{ $labels.instance }}"
+            summary: "Root filesystem has {{ $value | humanize }}B free on {{ $labels.nodename }}{{ $labels.instance }}"
             description: >-
-              OS disk above 90%. Imminent failure of kubelet/containerd on this
-              node. Free space now.
+              Under 2 GB or 8% free on the OS disk. The kubelet starts evicting
+              pods at 5% free. Free space now.
 
     # Memory (EDAC). Only the ECC-capable hosts report these at all.
     - name: bijouxlabs.memory
