@@ -87,15 +87,19 @@ metadata:
 #       value: "true"
 #       effect: NoSchedule
 ---
-apiVersion: v1
-kind: Node
-metadata:
-  name: kworker02
-  labels:
-    topology.kubernetes.io/zone: node02m910
-  annotations:
-    kustomize.toolkit.fluxcd.io/prune: disabled
-    kustomize.toolkit.fluxcd.io/ssa: merge
+# 🌡️ kworker02 PARKED (2026-11-08, barebones summer mode): node02m910 powered off
+# to cut cabinet heat. See docs/runbooks/barebones/README.md "Coming back":
+# uncomment only once the node is Ready again, or Flux makes a phantom Node.
+#
+# apiVersion: v1
+# kind: Node
+# metadata:
+#   name: kworker02
+#   labels:
+#     topology.kubernetes.io/zone: node02m910
+#   annotations:
+#     kustomize.toolkit.fluxcd.io/prune: disabled
+#     kustomize.toolkit.fluxcd.io/ssa: merge
 ---
 apiVersion: v1
 kind: Node
@@ -143,61 +147,67 @@ metadata:
     kustomize.toolkit.fluxcd.io/prune: disabled
     kustomize.toolkit.fluxcd.io/ssa: merge
 ---
-apiVersion: v1
-kind: Node
-metadata:
-  name: kmaster04
-  labels:
-    topology.kubernetes.io/zone: node04g4800
-  annotations:
-    kustomize.toolkit.fluxcd.io/prune: disabled
-    kustomize.toolkit.fluxcd.io/ssa: merge
-spec:
-  # See kmaster01 for why this is declared on every master.
-  taints:
-    - key: node-role.kubernetes.io/control-plane
-      value: "true"
-      effect: NoSchedule
----
-apiVersion: v1
-kind: Node
-metadata:
-  name: kworker04
-  labels:
-    topology.kubernetes.io/zone: node04g4800
-  annotations:
-    kustomize.toolkit.fluxcd.io/prune: disabled
-    kustomize.toolkit.fluxcd.io/ssa: merge
----
-apiVersion: v1
-kind: Node
-metadata:
-  name: kworker05
-  labels:
-    topology.kubernetes.io/zone: node04g4800
-  annotations:
-    kustomize.toolkit.fluxcd.io/prune: disabled
-    kustomize.toolkit.fluxcd.io/ssa: merge
----
-apiVersion: v1
-kind: Node
-metadata:
-  name: kworker07
-  labels:
-    topology.kubernetes.io/zone: node04g4800
-  annotations:
-    kustomize.toolkit.fluxcd.io/prune: disabled
-    kustomize.toolkit.fluxcd.io/ssa: merge
----
-apiVersion: v1
-kind: Node
-metadata:
-  name: kworker09
-  labels:
-    topology.kubernetes.io/zone: node04g4800
-  annotations:
-    kustomize.toolkit.fluxcd.io/prune: disabled
-    kustomize.toolkit.fluxcd.io/ssa: merge
+# 🌡️ node04g4800 PARKED (2026-11-08, barebones summer mode): kmaster04 and
+# kworker04/05/07/09 powered off, Node objects deleted (kmaster04 also out of etcd).
+# kmaster04's k3s is DISABLED. Before re-enabling it, move
+# /var/lib/rancher/k3s/server/db/etcd aside so it joins as a NEW member, then
+# uncomment each stub once its node is Ready. Restores the control-plane taint too.
+#
+# apiVersion: v1
+# kind: Node
+# metadata:
+#   name: kmaster04
+#   labels:
+#     topology.kubernetes.io/zone: node04g4800
+#   annotations:
+#     kustomize.toolkit.fluxcd.io/prune: disabled
+#     kustomize.toolkit.fluxcd.io/ssa: merge
+# spec:
+#   # See kmaster01 for why this is declared on every master.
+#   taints:
+#     - key: node-role.kubernetes.io/control-plane
+#       value: "true"
+#       effect: NoSchedule
+# ---
+# apiVersion: v1
+# kind: Node
+# metadata:
+#   name: kworker04
+#   labels:
+#     topology.kubernetes.io/zone: node04g4800
+#   annotations:
+#     kustomize.toolkit.fluxcd.io/prune: disabled
+#     kustomize.toolkit.fluxcd.io/ssa: merge
+# ---
+# apiVersion: v1
+# kind: Node
+# metadata:
+#   name: kworker05
+#   labels:
+#     topology.kubernetes.io/zone: node04g4800
+#   annotations:
+#     kustomize.toolkit.fluxcd.io/prune: disabled
+#     kustomize.toolkit.fluxcd.io/ssa: merge
+# ---
+# apiVersion: v1
+# kind: Node
+# metadata:
+#   name: kworker07
+#   labels:
+#     topology.kubernetes.io/zone: node04g4800
+#   annotations:
+#     kustomize.toolkit.fluxcd.io/prune: disabled
+#     kustomize.toolkit.fluxcd.io/ssa: merge
+# ---
+# apiVersion: v1
+# kind: Node
+# metadata:
+#   name: kworker09
+#   labels:
+#     topology.kubernetes.io/zone: node04g4800
+#   annotations:
+#     kustomize.toolkit.fluxcd.io/prune: disabled
+#     kustomize.toolkit.fluxcd.io/ssa: merge
 ---
 # node05m920 (.72) — joined the Proxmox cluster 2026-08-08; kmaster05 was
 # migrated here off the standalone `proxmox` host (.110) shortly after.
