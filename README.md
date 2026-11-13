@@ -90,7 +90,6 @@ The architectural and operational choices behind this setup are recorded in [`DE
 | [Opengist](https://github.com/thomiceli/opengist) | Self-hosted gist service |
 | [Copyparty](https://github.com/9001/copyparty) | Self-hosted file sharing |
 | [ownCloud Infinite Scale](https://owncloud.dev/ocis/) | Self-hosted Google Drive replacement; single-binary OCIS on NVMe-backed Longhorn |
-| [StefHQ](https://github.com/SLBij/stefhq) | Personal AI assistant — FastAPI + SvelteKit + ARQ worker + pgvector + Ollama |
 | [Primecrunch](https://github.com/angelobrsa/primecrunch-docker) | Self-hosted Prime Video catalogue browser; currently paused in Git (`replicas: 0`) |
 | [Radar](https://github.com/skyhook-io/radar) | Kubernetes cluster visibility — workloads, traffic (via Hubble), events |
 | [Qdrant](https://qdrant.tech) | Vector database for semantic search and RAG |

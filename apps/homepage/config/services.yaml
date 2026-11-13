@@ -41,11 +41,6 @@
         description: Tasks & to-do lists
         icon: vikunja.png
         siteMonitor: https://todo.bijouxlabs.cc
-    - StefHQ:
-        href: https://stefhq.io
-        description: Stef's app (public)
-        icon: mdi-web
-        siteMonitor: https://stefhq.io
 
 - Home & Automation:
     - Home Assistant:

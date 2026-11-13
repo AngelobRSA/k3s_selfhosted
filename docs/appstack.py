@@ -150,14 +150,9 @@ automation = panel(
             App("Qdrant", "qdrant", "qdrant"),
         ],
         [
-            App("StefHQ", "stefhq", "stefhq"),
             App("Primecrunch", "primecrunch", "primecrunch", "paused in git"),
         ],
     ],
-    footer=(
-        f'<FONT COLOR="{FG}">StefHQ</FONT> → '
-        f'<FONT COLOR="{FG}">Ollama</FONT> · local inference'
-    ),
 )
 
 observability = panel(
