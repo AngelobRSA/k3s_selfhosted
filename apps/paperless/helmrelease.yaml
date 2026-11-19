@@ -89,7 +89,7 @@ spec:
               allowPrivilegeEscalation: false
             image:
               repository: docker.io/valkey/valkey
-              tag: "8.1.11"
+              tag: "8.1.12"
             resources:
               requests:
                 cpu: 10m
